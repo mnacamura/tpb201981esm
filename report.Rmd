@@ -7,8 +7,8 @@ output:
     # latex_engine: lualatex
     toc: false
     number_sections: true
-    fig_width: 6
-    fig_height: 3.708
+    fig_width: 5
+    fig_height: 3.09
 indent: true
 header-includes: |
     \usepackage{indentfirst}
@@ -197,7 +197,7 @@ theorecal lines are obtained by substituting $\lambda$ and $\theta$ in
 \cref{eq:normalized-TAM} with their posterior means shown in
 \cref{tab:mcmc-results}, scaled by the number of cultural elements.
 
-```{r plot, echo = FALSE, fig.width = 5, fig.height = 4, fig.cap = "\\label{fig:plot}Fitted TAM spectra (red lines) to empirical data (black points)."}
+```{r plot, echo = FALSE, fig.cap = "\\label{fig:plot}Fitted TAM spectra (red lines) to empirical data (black points)."}
 log_xi <- function(k, D, lambda, theta)
     -log(k) + k * log(lambda) + lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
 theory <- function(ks, D, lambda, theta)
