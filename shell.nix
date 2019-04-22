@@ -2,7 +2,7 @@ with import <nixpkgs> {};
 
 mkShell {
   buildInputs = [
-    R which
+    R
     gettext
   ] ++ (with rPackages; [
     doParallel
