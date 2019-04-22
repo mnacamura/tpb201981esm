@@ -31,10 +31,8 @@ library(rstan)
 library(tibble)
 
 options(scipen = 100)
-
 theme_set(theme_light(base_size = 10) +
     theme(panel.spacing = unit(1, "lines")))
-# logscale_label <- scales::trans_format("log10", scales::math_format(10^.x))
 
 data_sets <- c( "aurignacian_beads"
               , "neolithic_ornaments"
@@ -270,8 +268,7 @@ ggplot(empil_df, aes(popularity, frequency)) +
     facet_wrap(~ label) +
     geom_point() +
     geom_line(data = theor_df, color = "red") +
-    scale_x_log10() +
-    # scale_y_log10() +
+    scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
     labs( x = "Popularity"
         , y = "Frequency"
         )
