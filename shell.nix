@@ -3,6 +3,7 @@ with import <nixpkgs> {};
 mkShell {
   buildInputs = [
     R which
+    gettext
   ] ++ (with rPackages; [
     doParallel
     dplyr
