@@ -8,6 +8,7 @@ mkShell {
     dplyr
     ggplot2
     glue
+    kableExtra
     magrittr
     purrr
     readr
@@ -20,6 +21,15 @@ mkShell {
     # pandoc-citeproc
   ]) ++ [
     xsv
+    (texlive.combine {
+      inherit (texlive)
+      scheme-basic  # installs collection-{basic,latex}
+      collection-latexrecommended
+      collection-latexextra
+      collection-fontsrecommended
+      ulem
+      ;
+    })
   ];
 
   shellHook = ''

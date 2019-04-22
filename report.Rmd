@@ -1,0 +1,282 @@
+---
+title: Fitting the TAM spectrum to empirical data
+author: Mitsuhiro Nakamura
+date: "`r Sys.time()`"
+output:
+  pdf_document:
+    # latex_engine: lualatex
+    toc: false
+    number_sections: true
+    fig_width: 6
+    fig_height: 3.708
+indent: true
+header-includes: |
+    \usepackage{indentfirst}
+    \usepackage{listings}
+    \usepackage[capitalize]{cleveref}
+    \lstset{
+      basicstyle={\small\ttfamily},
+    }
+---
+
+```{r setup, include = FALSE}
+library(doParallel)
+library(ggplot2)
+library(glue)
+library(knitr)
+library(kableExtra)
+library(magrittr)
+library(readr)
+library(rstan)
+library(tibble)
+
+options(scipen = 100)
+
+theme_set(theme_light(base_size = 10) +
+    theme(panel.spacing = unit(1, "lines")))
+# logscale_label <- scales::trans_format("log10", scales::math_format(10^.x))
+
+data_sets <- c( "aurignacian_beads"
+              , "neolithic_ornaments"
+              , "neolithic_pottery"
+              , "california_basketry"
+              ) %>% purrr::map(function(name) {
+    df <- read_csv( file.path("data-raw", glue(name, ".csv"))
+                  , col_types = list(.default = col_integer())
+                  )
+    df$frequency <- with(df, ifelse(is.na(frequency), 0, frequency))
+    df <- df %>% dplyr::filter(frequency > 0)
+    pair <- list()
+    pair[[name]] <- df
+    pair
+}) %>% do.call(c, .)
+
+to_samples <- function(df)
+    with(df, do.call(c, mapply(rep, popularity, frequency)))
+```
+
+```{r mcmc, include = FALSE}
+registerDoParallel(parallel::detectCores())
+
+cache <- file.path("cache.RData")
+if (file.exists(cache)) {
+    load(cache)
+} else {
+    model <- stan_model("model.stan")
+    results <- foreach(df = data_sets) %dopar% {
+        ks <- df %>% to_samples
+        sampling(model, cores = 1, chains = 8, iter = 5000, warmup = 4000,
+                 data = list( M = length(ks)
+                            , K = ks
+                            , D = max(ks)
+                            ))
+    }
+    names(results) <- names(data_sets)
+    save(results, file = cache)
+}
+```
+
+# Statistical model
+
+Let $K_1^m = \{K_1, K_2, \cdots, K_m\}$ be popularities of cultural elements $1, 2,
+\cdots, m$, respectively. Supposing that they are approximately i.i.d., the
+probability to observe $K_i$ is, from the TAM spectrum, given by
+\begin{equation}
+\label{eq:normalized-TAM}
+p(K_i \mid D, \mu, e, h, \beta, \eta) = \frac{\xi_{K_i}}{\sum_{k=1}^D \xi_k}.
+\end{equation}
+\Cref{eq:normalized-TAM} apparently has six paremeters. However, the TAM
+spectrum can be rewritten to
+\begin{subequations}
+\begin{equation}
+\xi_k = C\frac{\lambda^k}{k} \prod_{i=1}^k \frac{D + 1 - i}{D + \theta - i}
+      = C\frac{\lambda^k}{k} \frac{\Gamma(D + 1)\Gamma(D + \theta - k)}{\Gamma(D + 1 - k)\Gamma(D + \theta)}
+\end{equation}
+where
+\begin{align}
+C &= \frac{\mu^\prime}{\beta + \eta^\prime}(D-1), \\
+\mu^\prime &= \frac{\mu}{e}, \\
+\lambda &= 1 + \frac{\eta^\prime}{\beta},
+\end{align}
+and
+\begin{align}
+\theta &= \frac{1-\beta}{\beta}(D-1).
+\end{align}
+\end{subequations}
+\noindent Thus, \cref{eq:normalized-TAM} actually has three parameters: $D$,
+$\lambda$, and $\theta$. Note that $C$ is dropped due to normalization in
+\cref{eq:normalized-TAM}, and $\beta$ and $\eta^\prime$ are recovered from
+$D$, $\lambda$, and $\theta$ as
+\begin{subequations}
+\begin{equation}
+\beta = \frac{D - 1}{D - 1 + \theta}
+\end{equation}
+and
+\begin{equation}
+\eta^\prime = \beta (\lambda - 1).
+\end{equation}
+\end{subequations}
+\noindent The log-likelihood for the data $K_1^m$ is given by
+\begin{subequations}
+\label{eq:log-likelihood}
+\begin{align}
+L(K_1^m \mid D, \lambda, \theta) =& -\sum_{i=1}^m \log K_i + \sum_{i=1}^m K_i
+\log \lambda + m \log\Gamma(D + 1) + \sum_{i=1}^m \log\Gamma(D + \theta - K_i) \nonumber \\
+&- \sum_{i=1}^m \log\Gamma(D + 1 - K_i) - m \log\Gamma(D + \theta)
+- m \log Z(D, \lambda, \theta),
+\end{align}
+where
+\begin{equation}
+Z(D, \lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamma(D + \theta - k)}{\Gamma(D + 1 - k)\Gamma(D + \theta)}.
+\end{equation}
+\end{subequations}
+
+# Bayesian MCMC
+
+Using \cref{eq:log-likelihood}, we estimated the parameters for each of data
+sets (Aurignacian beads, Neolithic ornaments, Neolithic pottery, and
+California basketry) by means of Bayesian MCMC (Stan, version 2.18.2).
+Performing MCMC, we employed NUTS algorithm with default parameters, set in
+Stan 2.18.2, unless otherwise stated. We run eight chains of $5,000$ MCMC steps
+in which first $4,000$ warm-up steps were dropped to calculate posterior
+distributions.
+
+Listing \ref{lst:stan-code} shows the Stan code used for our estimation.
+In our estimation, we fixed $D (= \max_i(K_i))$ because the data sets are
+complete survey. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
+distributions with scale parameter $5$.
+
+\lstinputlisting[label={lst:stan-code},caption={Stan code.}]{model.stan}
+
+# Results
+
+\Cref{tab:mcmc-results} shows the summary of obtained posterior distributions
+for the data sets. For all the parameters in all the data sets, $\hat{R}$ is
+almost equal to $1$, indicating that MCMC chains reached relaxation. More
+over, the effective sample size, $n_{\rm eff}$, is sufficiently large for all
+the cases.
+
+```{r results, echo = FALSE}
+options(knitr.table.format = "latex")
+df <- results %>% purrr::map_dfr(function(fit) {
+    df_ <- summary(fit)$summary %>% as_tibble %>% round(3)
+    df_ <- df_[1:4, c(1, 3:ncol(df_))] %>%
+        add_column( param = c( "$\\lambda$"
+                             , "$\\theta$"
+                             , "$\\beta$"
+                             , "$\\eta^\\prime$"
+                             )
+                  , .before = TRUE
+                  )
+    colnames(df_) <- c( "Parameter"
+                      , "Mean"
+                      , "SD"
+                      , "2.5\\%"
+                      , "25\\%"
+                      , "50\\%"
+                      , "75\\%"
+                      , "97.5\\%"
+                      , "$n_{\\rm eff}$"
+                      , "$\\hat{R}$"
+                      )
+    df_
+})
+knitr::kable(df, escape = FALSE, booktabs = TRUE
+            , label = "mcmc-results"
+            , caption = "Summary statistics of posterior distributions."
+            ) %>%
+    # kable_styling(latex_options = "striped") %>%
+    group_rows("Aurignacian beads", 1,  4) %>%
+    group_rows("Neolithic ornaments", 5,  8) %>%
+    group_rows("Neolithic pottery", 9,  12) %>%
+    group_rows("California basketry", 13,  16)
+```
+
+\Cref{fig:plot} shows the fitted TAM spectrum for each of the data sets. The
+theorecal lines are obtained by substituting $\lambda$ and $\theta$ in
+\cref{eq:normalized-TAM} with their posterior means shown in
+\cref{tab:mcmc-results}, scaled by the number of cultural elements.
+
+```{r plot, echo = FALSE, fig.width = 5, fig.height = 4, fig.cap = "\\label{fig:plot}Fitted TAM spectra (red lines) to empirical data (black points)."}
+log_xi <- function(k, D, lambda, theta)
+    -log(k) + k * log(lambda) + lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
+theory <- function(ks, D, lambda, theta)
+    exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:max(ks), D, lambda, theta)))
+empil_df <- rbind( data_sets[[1]] %>% add_column(label = "Aurignacian beads", .before = TRUE)
+                 , data_sets[[2]] %>% add_column(label = "Neolithic ornaments", .before = TRUE)
+                 , data_sets[[3]] %>% add_column(label = "Neolithic pottery", .before = TRUE)
+                 , data_sets[[4]] %>% add_column(label = "California basketry", .before = TRUE)
+                 ) %>% as_tibble
+empil_df$label <- factor(empil_df$label, levels = c( "Aurignacian beads"
+                                                   , "Neolithic ornaments"
+                                                   , "Neolithic pottery"
+                                                   , "California basketry"
+                                                   ))
+theor_df <- rbind( local({ df_ <- data_sets[[1]]
+                         ; fit_ <- results[[1]]
+                         ; ks <- 1:max(df_$popularity)
+                         ; D <- max(ks)
+                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
+                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
+                         ; scale <- sum(df_$frequency)
+                         ; tibble( label = "Aurignacian beads"
+                                 , popularity = ks
+                                 , frequency = scale * theory(ks, D, lambda, theta)
+                                 )
+                         })
+                 , local({ df_ <- data_sets[[2]]
+                         ; fit_ <- results[[2]]
+                         ; ks <- 1:max(df_$popularity)
+                         ; D <- max(ks)
+                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
+                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
+                         ; scale <- sum(df_$frequency)
+                         ; tibble( label = "Neolithic ornaments"
+                                 , popularity = ks
+                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
+                                 )
+                         })
+                 , local({ df_ <- data_sets[[3]]
+                         ; fit_ <- results[[3]]
+                         ; ks <- 1:max(df_$popularity)
+                         ; D <- max(ks)
+                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
+                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
+                         ; scale <- sum(df_$frequency)
+                         ; tibble( label = "Neolithic pottery"
+                                 , popularity = ks
+                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
+                                 )
+                         })
+                 , local({ df_ <- data_sets[[4]]
+                         ; fit_ <- results[[4]]
+                         ; ks <- 1:max(df_$popularity)
+                         ; D <- max(ks)
+                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
+                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
+                         ; scale <- sum(df_$frequency)
+                         ; tibble( label = "California basketry"
+                                 , popularity = ks
+                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
+                                 )
+                         })
+                 ) %>% as_tibble
+theor_df$label <- factor(theor_df$label, levels = c( "Aurignacian beads"
+                                                   , "Neolithic ornaments"
+                                                   , "Neolithic pottery"
+                                                   , "California basketry"
+                                                   ))
+ggplot(empil_df, aes(popularity, frequency)) +
+    facet_wrap(~ label) +
+    geom_point() +
+    geom_line(data = theor_df, color = "red") +
+    scale_x_log10() +
+    # scale_y_log10() +
+    labs( x = "Popularity"
+        , y = "Frequency"
+        )
+```
+
+
+
+<!-- vim: set fdm=syntax: -->
