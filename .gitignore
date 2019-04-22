@@ -1,3 +1,5 @@
 # Nix direnv related stuff
 .direnv
 result
+*.html
+*.pdf
