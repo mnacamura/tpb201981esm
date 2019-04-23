@@ -35,21 +35,26 @@ options(scipen = 100)
 theme_set(theme_light(base_size = 10) +
     theme(panel.spacing = unit(1, "lines")))
 
-data_sets <- c( "aurignacian_beads"
-              , "neolithic_pottery"
-              , "neolithic_ornaments"
-              , "california_basketry"
-              ) %>% purrr::map(function(name) {
-    df <- read_csv( file.path("data-raw", glue(name, ".csv"))
-                  , col_types = list(.default = col_integer())
-                  ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
-    result <- list()
-    result[[name]] <- list( label = gsub("_", " ", name) %>% str_to_sentence
-                          , D = NA
-                          , data = df
-                          )
-    result
-}) %>% do.call(c, .)
+data_sets <- local({
+    Ds <- read_csv( file.path("data-raw", "D.csv")
+                  , col_types = list(label = col_character(), D = col_integer())
+                  ) %>% tidyr::spread(label, D) %>% as.list
+    c( "aurignacian_beads"
+     , "neolithic_pottery"
+     , "neolithic_ornaments"
+     , "california_basketry"
+     ) %>% purrr::map(function(name) {
+        df <- read_csv( file.path("data-raw", glue(name, ".csv"))
+                      , col_types = list(.default = col_integer())
+                      ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
+        result <- list()
+        result[[name]] <- list( label = gsub("_", " ", name) %>% str_to_sentence
+                              , D = Ds[[name]]
+                              , data = df
+                              )
+        result
+    }) %>% do.call(c, .)
+})
 
 to_samples <- function(data)
     with(data, do.call(c, mapply(rep, popularity, frequency)))
@@ -65,11 +70,19 @@ if (file.exists(cache)) {
     model <- stan_model("model.stan")
     results <- foreach(data_set = data_sets) %dopar% {
         ks <- data_set$data %>% to_samples
-        sampling(model, cores = 1, chains = 8, iter = 5000, warmup = 4000,
-                 data = list( M = length(ks)
-                            , K = ks
-                            , D = max(ks)
-                            ))
+        res <- sampling( model
+                       , control = list( adapt_delta = .998
+                                       , max_treedepth = 15
+                                       )
+                       , cores = 1
+                       , chains = 8
+                       , iter = 2000
+                       , warmup = 1000
+                       , data = list( M = length(ks)
+                                    , K = ks
+                                    , D = data_set$D
+                                    )
+                       )
     }
     names(results) <- names(data_sets)
     save(results, file = cache)
@@ -136,14 +149,15 @@ Z(D, \lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamm
 Using \cref{eq:log-likelihood}, we estimated the parameters for each of data
 sets (Aurignacian beads, Neolithic pottery, Neolithic ornaments, and
 California basketry) by means of Bayesian MCMC (Stan, version 2.18.2).
-Performing MCMC, we employed NUTS algorithm with default parameters, set in
-Stan 2.18.2, unless otherwise stated. We run eight chains of $5,000$ MCMC steps
-in which first $4,000$ warm-up steps were dropped to calculate posterior
-distributions.
+Performing MCMC, we employed NUTS algorithm with tuning parameters
+\lstinline{adapt_delta = .998} and \lstinline{max_treedepth = 15}.
+We set the other tuning parameters to their default values. We run eight
+chains of $2,000$ MCMC steps in which first $1,000$ warm-up steps were dropped
+to calculate posterior distributions.
 
 Listing \ref{lst:stan-code} shows the Stan code used for our estimation.
-In our estimation, we fixed $D (= \max_i(K_i))$ because the data sets are
-complete survey. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
+In our estimation, we fixed $D$ to the number of all sites or groups in each
+data set. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
 distributions with scale parameter $5$.
 
 \lstinputlisting[label={lst:stan-code},caption={Stan code.}]{model.stan}
