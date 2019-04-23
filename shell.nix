@@ -15,6 +15,7 @@ mkShell {
     readr
     rmarkdown
     rstan
+    stringr
     tibble
     tidyr
   ]) ++ (with haskellPackages; [

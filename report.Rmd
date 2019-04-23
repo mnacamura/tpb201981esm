@@ -23,11 +23,12 @@ header-includes: |
 library(doParallel)
 library(ggplot2)
 library(glue)
-library(knitr)
 library(kableExtra)
+library(knitr)
 library(magrittr)
 library(readr)
 library(rstan)
+library(stringr)
 library(tibble)
 
 options(scipen = 100)
@@ -41,16 +42,17 @@ data_sets <- c( "aurignacian_beads"
               ) %>% purrr::map(function(name) {
     df <- read_csv( file.path("data-raw", glue(name, ".csv"))
                   , col_types = list(.default = col_integer())
-                  )
-    df$frequency <- with(df, ifelse(is.na(frequency), 0, frequency))
-    df <- df %>% dplyr::filter(frequency > 0)
-    pair <- list()
-    pair[[name]] <- df
-    pair
+                  ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
+    result <- list()
+    result[[name]] <- list( label = gsub("_", " ", name) %>% str_to_sentence
+                          , D = NA
+                          , data = df
+                          )
+    result
 }) %>% do.call(c, .)
 
-to_samples <- function(df)
-    with(df, do.call(c, mapply(rep, popularity, frequency)))
+to_samples <- function(data)
+    with(data, do.call(c, mapply(rep, popularity, frequency)))
 ```
 
 ```{r mcmc, include = FALSE}
@@ -61,8 +63,8 @@ if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results <- foreach(df = data_sets) %dopar% {
-        ks <- df %>% to_samples
+    results <- foreach(data_set = data_sets) %dopar% {
+        ks <- data_set$data %>% to_samples
         sampling(model, cores = 1, chains = 8, iter = 5000, warmup = 4000,
                  data = list( M = length(ks)
                             , K = ks
@@ -156,9 +158,10 @@ the cases.
 
 ```{r results, echo = FALSE}
 options(knitr.table.format = "latex")
-df <- results %>% purrr::map_dfr(function(fit) {
-    df_ <- summary(fit)$summary %>% as_tibble %>% round(3)
-    df_ <- df_[1:4, c(1, 3:ncol(df_))] %>%
+
+summary_df <- results %>% purrr::map_dfr(function(fit) {
+    df <- summary(fit)$summary %>% as_tibble %>% round(3)
+    df <- df[1:4, c(1, 3:ncol(df))] %>%
         add_column( param = c( "$\\lambda$"
                              , "$\\theta$"
                              , "$\\beta$"
@@ -166,28 +169,28 @@ df <- results %>% purrr::map_dfr(function(fit) {
                              )
                   , .before = TRUE
                   )
-    colnames(df_) <- c( "Parameter"
-                      , "Mean"
-                      , "SD"
-                      , "2.5\\%"
-                      , "25\\%"
-                      , "50\\%"
-                      , "75\\%"
-                      , "97.5\\%"
-                      , "$n_{\\rm eff}$"
-                      , "$\\hat{R}$"
-                      )
-    df_
+    colnames(df) <- c( "Parameter"
+                     , "Mean"
+                     , "SD"
+                     , "2.5\\%"
+                     , "25\\%"
+                     , "50\\%"
+                     , "75\\%"
+                     , "97.5\\%"
+                     , "$n_{\\rm eff}$"
+                     , "$\\hat{R}$"
+                     )
+    df
 })
-knitr::kable(df, escape = FALSE, booktabs = TRUE
+
+knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
             , label = "mcmc-results"
             , caption = "Summary statistics of posterior distributions."
             ) %>%
-    # kable_styling(latex_options = "striped") %>%
-    group_rows("Aurignacian beads", 1,  4) %>%
-    group_rows("Neolithic ornaments", 5,  8) %>%
-    group_rows("Neolithic pottery", 9,  12) %>%
-    group_rows("California basketry", 13,  16)
+    group_rows("Aurignacian beads", 1, 4) %>%
+    group_rows("Neolithic ornaments", 5, 8) %>%
+    group_rows("Neolithic pottery", 9, 12) %>%
+    group_rows("California basketry", 13, 16)
 ```
 
 \Cref{fig:plot} shows the fitted TAM spectrum for each of the data sets. The
@@ -197,83 +200,42 @@ theorecal lines are obtained by substituting $\lambda$ and $\theta$ in
 
 ```{r plot, echo = FALSE, fig.cap = "\\label{fig:plot}Fitted TAM spectra (red lines) to empirical data (black points)."}
 log_xi <- function(k, D, lambda, theta)
-    -log(k) + k * log(lambda) + lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
+    -log(k) + k * log(lambda) +
+        lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
 theory <- function(ks, D, lambda, theta)
     exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:max(ks), D, lambda, theta)))
-empil_df <- rbind( data_sets[[1]] %>% add_column(label = "Aurignacian beads", .before = TRUE)
-                 , data_sets[[2]] %>% add_column(label = "Neolithic ornaments", .before = TRUE)
-                 , data_sets[[3]] %>% add_column(label = "Neolithic pottery", .before = TRUE)
-                 , data_sets[[4]] %>% add_column(label = "California basketry", .before = TRUE)
-                 ) %>% as_tibble
-empil_df$label <- factor(empil_df$label, levels = c( "Aurignacian beads"
-                                                   , "Neolithic ornaments"
-                                                   , "Neolithic pottery"
-                                                   , "California basketry"
-                                                   ))
-theor_df <- rbind( local({ df_ <- data_sets[[1]]
-                         ; fit_ <- results[[1]]
-                         ; ks <- 1:max(df_$popularity)
-                         ; D <- max(ks)
-                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
-                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
-                         ; scale <- sum(df_$frequency)
-                         ; tibble( label = "Aurignacian beads"
-                                 , popularity = ks
-                                 , frequency = scale * theory(ks, D, lambda, theta)
-                                 )
-                         })
-                 , local({ df_ <- data_sets[[2]]
-                         ; fit_ <- results[[2]]
-                         ; ks <- 1:max(df_$popularity)
-                         ; D <- max(ks)
-                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
-                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
-                         ; scale <- sum(df_$frequency)
-                         ; tibble( label = "Neolithic ornaments"
-                                 , popularity = ks
-                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
-                                 )
-                         })
-                 , local({ df_ <- data_sets[[3]]
-                         ; fit_ <- results[[3]]
-                         ; ks <- 1:max(df_$popularity)
-                         ; D <- max(ks)
-                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
-                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
-                         ; scale <- sum(df_$frequency)
-                         ; tibble( label = "Neolithic pottery"
-                                 , popularity = ks
-                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
-                                 )
-                         })
-                 , local({ df_ <- data_sets[[4]]
-                         ; fit_ <- results[[4]]
-                         ; ks <- 1:max(df_$popularity)
-                         ; D <- max(ks)
-                         ; lambda <- rstan::extract(fit_, "lambda")[[1]] %>% mean
-                         ; theta <- rstan::extract(fit_, "theta")[[1]] %>% mean
-                         ; scale <- sum(df_$frequency)
-                         ; tibble( label = "California basketry"
-                                 , popularity = ks
-                                 , frequency = scale * theory(ks, max(ks), lambda, theta)
-                                 )
-                         })
-                 ) %>% as_tibble
-theor_df$label <- factor(theor_df$label, levels = c( "Aurignacian beads"
-                                                   , "Neolithic ornaments"
-                                                   , "Neolithic pottery"
-                                                   , "California basketry"
-                                                   ))
-ggplot(empil_df, aes(popularity, frequency)) +
+
+empirical_df <- data_sets %>% purrr::map_dfr(function(data_set) {
+    data_set$data %>% add_column(label = data_set$label, .before = TRUE)
+})
+empirical_df$label <- factor( empirical_df$label
+                            , levels = data_sets %>% purrr::map_chr(~ .$label)
+                            )
+theoretical_df <- names(data_sets) %>% purrr::map_dfr(function(name) {
+    df <- data_sets[[name]]$data
+    fit <- results[[name]]
+    ks <- 1:max(df$popularity)
+    D <- max(ks)
+    lambda <- rstan::extract(fit, "lambda")[[1]] %>% mean
+    theta <- rstan::extract(fit, "theta")[[1]] %>% mean
+    scale <- sum(df$frequency)
+    tibble( label = data_sets[[name]]$label
+          , popularity = ks
+          , frequency = scale * theory(ks, D, lambda, theta)
+          )
+})
+theoretical_df$label <- factor( theoretical_df$label
+                              , levels = data_sets %>% purrr::map_chr(~ .$label)
+                              )
+
+ggplot(empirical_df, aes(popularity, frequency)) +
     facet_wrap(~ label) +
     geom_point() +
-    geom_line(data = theor_df, color = "red") +
+    geom_line(data = theoretical_df, color = "red") +
     scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
     labs( x = "Popularity"
         , y = "Frequency"
         )
 ```
-
-
 
 <!-- vim: set fdm=syntax: -->
