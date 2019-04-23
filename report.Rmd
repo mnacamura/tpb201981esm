@@ -36,8 +36,8 @@ theme_set(theme_light(base_size = 10) +
     theme(panel.spacing = unit(1, "lines")))
 
 data_sets <- c( "aurignacian_beads"
-              , "neolithic_ornaments"
               , "neolithic_pottery"
+              , "neolithic_ornaments"
               , "california_basketry"
               ) %>% purrr::map(function(name) {
     df <- read_csv( file.path("data-raw", glue(name, ".csv"))
@@ -134,7 +134,7 @@ Z(D, \lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamm
 # Bayesian MCMC
 
 Using \cref{eq:log-likelihood}, we estimated the parameters for each of data
-sets (Aurignacian beads, Neolithic ornaments, Neolithic pottery, and
+sets (Aurignacian beads, Neolithic pottery, Neolithic ornaments, and
 California basketry) by means of Bayesian MCMC (Stan, version 2.18.2).
 Performing MCMC, we employed NUTS algorithm with default parameters, set in
 Stan 2.18.2, unless otherwise stated. We run eight chains of $5,000$ MCMC steps
@@ -188,8 +188,8 @@ knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
             , caption = "Summary statistics of posterior distributions."
             ) %>%
     group_rows("Aurignacian beads", 1, 4) %>%
-    group_rows("Neolithic ornaments", 5, 8) %>%
-    group_rows("Neolithic pottery", 9, 12) %>%
+    group_rows("Neolithic pottery", 5, 8) %>%
+    group_rows("Neolithic ornaments", 9, 12) %>%
     group_rows("California basketry", 13, 16)
 ```
 
