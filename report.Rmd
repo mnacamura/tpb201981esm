@@ -207,17 +207,18 @@ knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
     group_rows("California basketry", 13, 16)
 ```
 
-\Cref{fig:plot} shows the fitted TAM spectrum for each of the data sets. The
-theorecal lines are obtained by substituting $\lambda$ and $\theta$ in
-\cref{eq:normalized-TAM} with their posterior means shown in
-\cref{tab:mcmc-results}, scaled by the number of cultural elements.
+\Cref{fig:plot} shows the posterior prediction of TAM spectrum for each data
+set.The predictions were obtained from \cref{eq:normalized-TAM} scaled by the
+number of cultural elements and the posterior distributions of $\lambda$ and
+$\theta$. Many data points are out of 95\% credible intervals, implying that
+the empirical data are far noisier than the theory.
 
-```{r plot, echo = FALSE, fig.cap = "\\label{fig:plot}Fitted TAM spectra (red lines) to empirical data (black points)."}
+```{r plot, echo = FALSE, fig.cap = "\\label{fig:plot}Posterior predictions of TAM specta: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
 log_xi <- function(k, D, lambda, theta)
     -log(k) + k * log(lambda) +
         lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
 theory <- function(ks, D, lambda, theta)
-    exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:max(ks), D, lambda, theta)))
+    exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:D, D, lambda, theta)))
 
 empirical_df <- data_sets %>% purrr::map_dfr(function(data_set) {
     data_set$data %>% add_column(label = data_set$label, .before = TRUE)
@@ -226,26 +227,39 @@ empirical_df$label <- factor( empirical_df$label
                             , levels = data_sets %>% purrr::map_chr(~ .$label)
                             )
 theoretical_df <- names(data_sets) %>% purrr::map_dfr(function(name) {
-    df <- data_sets[[name]]$data
-    fit <- results[[name]]
-    ks <- 1:max(df$popularity)
-    D <- max(ks)
-    lambda <- rstan::extract(fit, "lambda")[[1]] %>% mean
-    theta <- rstan::extract(fit, "theta")[[1]] %>% mean
-    scale <- sum(df$frequency)
+    data_set <- data_sets[[name]]
+    fit <- 
+    D <- data_set$D
+    ks <- 1:D
+    scale <- sum(data_set$data$frequency)
+    post_pred <- with(rstan::extract(results[[name]], c("lambda", "theta")), {
+        purrr::map2(lambda, theta, function(lambda_, theta_) {
+            scale * theory(ks, D, lambda_, theta_)
+        }) %>% do.call(rbind, .)
+    })
     tibble( label = data_sets[[name]]$label
           , popularity = ks
-          , frequency = scale * theory(ks, D, lambda, theta)
+          , freq_mean = apply(post_pred, 2, mean)
+          , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
+          , freq_q975 = apply(post_pred, 2, function(.) quantile(., .975))
           )
 })
 theoretical_df$label <- factor( theoretical_df$label
                               , levels = data_sets %>% purrr::map_chr(~ .$label)
                               )
 
-ggplot(empirical_df, aes(popularity, frequency)) +
+ggplot(empirical_df, aes(x = popularity)) +
     facet_wrap(~ label) +
-    geom_point() +
-    geom_line(data = theoretical_df, color = "red") +
+    geom_point(aes(y = frequency), size = .6) +
+    geom_ribbon( aes(ymin = freq_q025, ymax = freq_q975)
+               , data = theoretical_df
+               , fill = "red"
+               , alpha = .3
+               ) +
+    geom_line( aes(y = freq_mean)
+             , data = theoretical_df
+             , color = "red"
+             ) +
     scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
     labs( x = "Popularity"
         , y = "Frequency"
