@@ -91,7 +91,7 @@ if (file.exists(cache)) {
 
 # Statistical model
 
-Let $K_1^m = \{K_1, K_2, \cdots, K_m\}$ be popularities of cultural elements $1, 2,
+Let $K_1^m = \{K_1, K_2, \cdots, K_m\}$ be popularities of cultural traits $1, 2,
 \cdots, m$, respectively. Supposing that they are approximately i.i.d., the
 probability to observe $K_i$ is, from the TAM spectrum, given by
 \begin{equation}
@@ -133,7 +133,7 @@ and
 \begin{subequations}
 \label{eq:log-likelihood}
 \begin{align}
-L(K_1^m \mid D, \lambda, \theta) =& -\sum_{i=1}^m \log K_i + \sum_{i=1}^m K_i
+\ell(K_1^m \mid D, \lambda, \theta) =& -\sum_{i=1}^m \log K_i + \sum_{i=1}^m K_i
 \log \lambda + m \log\Gamma(D + 1) + \sum_{i=1}^m \log\Gamma(D + \theta - K_i) \nonumber \\
 &- \sum_{i=1}^m \log\Gamma(D + 1 - K_i) - m \log\Gamma(D + \theta)
 - m \log Z(D, \lambda, \theta),
@@ -166,9 +166,9 @@ distributions with scale parameter $5$.
 
 \Cref{tab:mcmc-results} shows the summary of obtained posterior distributions
 for the data sets. For all the parameters in all the data sets, $\hat{R}$ is
-almost equal to $1$, indicating that MCMC chains reached relaxation. More
-over, the effective sample size, $n_{\rm eff}$, is sufficiently large for all
-the cases.
+almost equal to $1$, indicating that MCMC chains reached relaxation. Moreover,
+the effective sample size, $n_{\rm eff}$, is sufficiently large for all the
+cases.
 
 ```{r results, echo = FALSE}
 options(knitr.table.format = "latex")
@@ -207,11 +207,10 @@ knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
     group_rows("California basketry", 13, 16)
 ```
 
-\Cref{fig:plot} shows the posterior prediction of TAM spectrum for each data
-set.The predictions were obtained from \cref{eq:normalized-TAM} scaled by the
-number of cultural elements and the posterior distributions of $\lambda$ and
-$\theta$. Many data points are out of 95\% credible intervals, implying that
-the empirical data are far noisier than the theory.
+\Cref{fig:plot} shows the posterior predictions of TAM spectra for the data
+sets. These predictions were obtained from \cref{eq:normalized-TAM} scaled by
+the number of cultural traits and the posterior distributions of $\lambda$
+and $\theta$.
 
 ```{r plot, echo = FALSE, fig.cap = "\\label{fig:plot}Posterior predictions of TAM specta: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
 log_xi <- function(k, D, lambda, theta)

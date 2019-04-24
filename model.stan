@@ -8,9 +8,9 @@ functions {
     }
 }
 data {
-    /* Number of cultural elements */
+    /* Number of cultural traits */
     int<lower=1> M;
-    /* Popularity of each cultural element */
+    /* Popularity of each cultural trait */
     int<lower=1> K[M];
     /* Number of demes, given by the number of sites or groups */
     int<lower=1> D;
