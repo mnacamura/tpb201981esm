@@ -12,7 +12,7 @@ data {
     int<lower=1> M;
     /* Popularity of each cultural element */
     int<lower=1> K[M];
-    /* Number of demes, given by the maximum of popularity in the data */
+    /* Number of demes, given by the number of sites or groups */
     int<lower=1> D;
 }
 parameters {
