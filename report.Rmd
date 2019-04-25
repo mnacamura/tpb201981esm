@@ -51,7 +51,12 @@ data_sets <- local({
                       , col_types = list(.default = col_integer())
                       ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
         result <- list()
-        result[[name]] <- list( label = gsub("_", " ", name) %>% str_to_sentence
+        result[[name]] <- list( label = gsub("_", " ", name) %>% {
+                                   if (grepl("WNAI", .))
+                                       identity(.)
+                                   else
+                                       str_to_sentence(.)
+                                }
                               , D = Ds[[name]]
                               , data = df
                               )
