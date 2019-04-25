@@ -43,6 +43,9 @@ data_sets <- local({
      , "neolithic_pottery"
      , "neolithic_ornaments"
      , "california_basketry"
+     , "canoe_stylistic"
+     , "canoe_functional"
+     , "WNAI_technology"
      ) %>% purrr::map(function(name) {
         df <- read_csv( file.path("data-raw", glue(name, ".csv"))
                       , col_types = list(.default = col_integer())
@@ -147,9 +150,10 @@ Z(D, \lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamm
 # Bayesian MCMC
 
 Using \cref{eq:log-likelihood}, we estimated the parameters for each of data
-sets (Aurignacian beads, Neolithic pottery, Neolithic ornaments, and
-California basketry) by means of Bayesian MCMC (Stan, version 2.18.2).
-Performing MCMC, we employed NUTS algorithm with tuning parameters
+sets (Aurignacian beads, Neolithic pottery, Neolithic ornaments, California
+basketry, Canoe stylistic, Canoe functional, and WNAI technology) by means of
+Bayesian MCMC (Stan, version 2.18.2). Performing MCMC, we employed NUTS
+algorithm with tuning parameters
 \lstinline{adapt_delta = .998} and \lstinline{max_treedepth = 15}.
 We set the other tuning parameters to their default values. We run eight
 chains of $2,000$ MCMC steps in which first $1,000$ warm-up steps were dropped
@@ -204,7 +208,10 @@ knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
     group_rows("Aurignacian beads", 1, 4) %>%
     group_rows("Neolithic pottery", 5, 8) %>%
     group_rows("Neolithic ornaments", 9, 12) %>%
-    group_rows("California basketry", 13, 16)
+    group_rows("California basketry", 13, 16) %>%
+    group_rows("Canoe stylistic", 17, 20) %>%
+    group_rows("Canoe functional", 21, 24) %>%
+    group_rows("WNAI technology", 25, 28) %>%
 ```
 
 \Cref{fig:plot} shows the posterior predictions of TAM spectra for the data
