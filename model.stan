@@ -18,13 +18,6 @@ data {
 parameters {
     real<lower=1> lambda;
     real<lower=0> theta;
-
-}
-transformed parameters {
-    real<lower=0,upper=1> beta;
-    real<lower=0> eta_;  // eta'
-    beta = (D - 1) / (D - 1 + theta);
-    eta_ = beta * (lambda - 1);
 }
 model {
     real Z = 0;
@@ -37,6 +30,10 @@ model {
     target += - M * log(Z);
 }
 generated quantities {
-    real beta_plus_eta_;
+    real<lower=0,upper=1> beta;
+    real<lower=0> eta_;  // eta'
+    real<lower=0> beta_plus_eta_;
+    beta = (D - 1) / (D - 1 + theta);
+    eta_ = beta * (lambda - 1);
     beta_plus_eta_ = beta + eta_;
 }
