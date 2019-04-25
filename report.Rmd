@@ -71,7 +71,7 @@ to_samples <- function(data)
 ```{r mcmc, include = FALSE}
 registerDoParallel(parallel::detectCores())
 
-cache <- file.path("cache.RData")
+cache <- file.path("cache", "mcmc_results.RData")
 if (file.exists(cache)) {
     load(cache)
 } else {
