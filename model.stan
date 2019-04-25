@@ -36,3 +36,7 @@ model {
         Z += exp(log_xi(k, D, lambda, theta));
     target += - M * log(Z);
 }
+generated quantities {
+    real beta_plus_eta_;
+    beta_plus_eta_ = beta + eta_;
+}
