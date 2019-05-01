@@ -8,10 +8,12 @@ functions {
     }
 }
 data {
-    /* Number of cultural traits */
-    int<lower=1> m;
-    /* Popularity of each cultural trait */
-    int<lower=1> k[m];
+    /* Size of popularity-frequency table */
+    int<lower=1> l;
+    /* Popularities */
+    int<lower=1> k[l];
+    /* Frequencies */
+    int<lower=1> m[l];
     /* Number of demes, given by the number of sites or groups */
     int<lower=1> D;
 }
@@ -23,11 +25,11 @@ model {
     real Z = 0;
     lambda ~ cauchy(1, 5);
     theta ~ cauchy(0, 5);
-    for (i in 1:m)
-        target += log_xi(k[i], D, lambda, theta);
-    for (k in 1:D)
-        Z += exp(log_xi(k, D, lambda, theta));
-    target += - m * log(Z);
+    for (i in 1:l)
+        target += m[i] * log_xi(k[i], D, lambda, theta);
+    for (k_ in 1:D)
+        Z += exp(log_xi(k_, D, lambda, theta));
+    target += - sum(m) * log(Z);
 }
 generated quantities {
     real<lower=0,upper=1> beta;
