@@ -58,7 +58,7 @@ data_sets <- local({
                                        str_to_sentence(.)
                                 }
                               , D = Ds[[name]]
-                              , data = df
+                              , table = df
                               )
         result
     }) %>% do.call(c, .)
@@ -74,8 +74,8 @@ if (file.exists(cache)) {
 } else {
     model <- stan_model("model.stan")
     results <- foreach(data_set = data_sets) %dopar% {
-        ks <- data_set$data$popularity
-        ms <- data_set$data$frequency
+        ks <- data_set$table$popularity
+        ms <- data_set$table$frequency
         sampling( model
                 , control = list( adapt_delta = .998
                                 , max_treedepth = 15
@@ -246,7 +246,7 @@ theory <- function(ks, D, lambda, theta)
     exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:D, D, lambda, theta)))
 
 empirical_df <- data_sets %>% purrr::map_dfr(function(data_set) {
-    data_set$data %>% add_column(label = data_set$label, .before = TRUE)
+    data_set$table %>% add_column(label = data_set$label, .before = TRUE)
 })
 empirical_df$label <- factor( empirical_df$label
                             , levels = data_sets %>% purrr::map_chr(~ .$label)
@@ -256,7 +256,7 @@ theoretical_df <- names(data_sets) %>% purrr::map_dfr(function(name) {
     fit <- 
     D <- data_set$D
     ks <- 1:D
-    scale <- sum(data_set$data$frequency)
+    scale <- sum(data_set$table$frequency)
     post_pred <- with(rstan::extract(results[[name]], c("lambda", "theta")), {
         purrr::map2(lambda, theta, function(lambda_, theta_) {
             scale * theory(ks, D, lambda_, theta_)
