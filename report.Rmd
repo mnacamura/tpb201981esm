@@ -46,13 +46,18 @@ data_sets <- local({
      , "canoe_stylistic"
      , "canoe_functional"
      , "WNAI_technology"
+     , "IBM_island"
+     , "IBM_lattice"
+     , "IBM_ring"
      ) %>% purrr::map(function(name) {
         df <- read_csv( file.path("data-raw", glue(name, ".csv"))
-                      , col_types = list(.default = col_integer())
+                      , col_types = list( popularity = col_integer()
+                                        , frequency = col_double()
+                                        )
                       ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
         result <- list()
         result[[name]] <- list( label = gsub("_", " ", name) %>% {
-                                   if (grepl("WNAI", .))
+                                   if (grepl("WNAI", .) || grepl("IBM", .) )
                                        identity(.)
                                    else
                                        str_to_sentence(.)
@@ -73,24 +78,21 @@ if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results <- foreach(data_set = data_sets) %dopar% {
-        ks <- data_set$table$popularity
-        ms <- data_set$table$frequency
-        sampling( model
-                , control = list( adapt_delta = .998
-                                , max_treedepth = 15
-                                )
-                , cores = 1
-                , chains = 8
-                , iter = 2000
-                , warmup = 1000
-                , data = list( l = length(ks)
-                             , k = ks
-                             , m = ms
-                             , D = data_set$D
-                             )
-                )
-    }
+    results <- foreach(data_set = data_sets) %dopar% sampling(
+          model
+        , control = list( adapt_delta = .998
+                        , max_treedepth = 15
+                        )
+        , cores = 1
+        , chains = 8
+        , iter = 2000
+        , warmup = 1000
+        , data = list( l = nrow(data_set$table)
+                     , k = data_set$table$popularity
+                     , m = data_set$table$frequency
+                     , D = data_set$D
+                     )
+        )
     names(results) <- names(data_sets)
     save(results, file = cache)
 }
@@ -150,13 +152,12 @@ Z(D, \lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamm
 \end{equation}
 \end{subequations}
 
-One may want to see the data $k_1^m$ as a popularity--frequency table
+If one sees the data $k_1^m$ as a popularity--frequency table
 \begin{equation}
 \label{eq:data-as-table}
-\left\{ (k, m_k) \mid k \in \mathbb{N}, m_k = \#\{k^\prime \in k_1^m \mid k^\prime = k\} \right\}.
+\left\{ (k, m_k) \mid k \in \mathbb{N}, m_k = \#\{k^\prime \in k_1^m \mid k^\prime = k\} \right\},
 \end{equation}
-Note that $\sum_{k=1}^\infty m_k = m$ holds true.
-For \cref{eq:data-as-table}, \cref{eq:log-likelihood} can be represented as
+\cref{eq:log-likelihood} is represented as
 \begin{align}
 \label{eq:log-likelihood-for-table}
 \ell(k_1^m \mid D, \lambda, \theta) =& -\sum_{k=1}^\infty m_k \log k + \sum_{k=1}^\infty m_k k
@@ -164,6 +165,9 @@ For \cref{eq:data-as-table}, \cref{eq:log-likelihood} can be represented as
 &- \sum_{k=1}^\infty m_k \log\Gamma(D + 1 - k) - m \log\Gamma(D + \theta)
 - m \log Z(D, \lambda, \theta).
 \end{align}
+Note that $\sum_{k=1}^\infty m_k = m$ holds true.
+Since \cref{eq:log-likelihood-for-table} is more computationally efficient than
+\cref{eq:log-likelihood}, we use \cref{eq:log-likelihood-for-table} in practice.
 
 # Bayesian MCMC
 
@@ -186,13 +190,13 @@ distributions with scale parameter $5$.
 
 # Results
 
-\Cref{tab:mcmc-results} shows the summary of obtained posterior distributions
+\Cref{tab:mcmc-results-1} shows the summary of obtained posterior distributions
 for the data sets. For all the parameters in all the data sets, $\hat{R}$ is
 almost equal to $1$, indicating that MCMC chains reached relaxation. Moreover,
 the effective sample size, $n_{\rm eff}$, is sufficiently large for all the
 cases.
 
-```{r results, echo = FALSE}
+```{r summary, echo = FALSE}
 options(knitr.table.format = "latex")
 
 summary_df <- results %>% purrr::map_dfr(function(fit) {
@@ -219,9 +223,11 @@ summary_df <- results %>% purrr::map_dfr(function(fit) {
                      )
     df
 })
+```
 
-knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
-            , label = "mcmc-results"
+```{r results_1, echo = FALSE}
+knitr::kable(summary_df[1:35, ], escape = FALSE, booktabs = TRUE
+            , label = "mcmc-results-1"
             , caption = "Summary statistics of posterior distributions."
             ) %>%
     group_rows("Aurignacian beads", 1, 5) %>%
@@ -231,6 +237,16 @@ knitr::kable(summary_df, escape = FALSE, booktabs = TRUE
     group_rows("Canoe stylistic", 21, 25) %>%
     group_rows("Canoe functional", 26, 30) %>%
     group_rows("WNAI technology", 31, 35)
+```
+
+```{r results_2, echo = FALSE}
+knitr::kable(summary_df[36:50, ], escape = FALSE, booktabs = TRUE
+            , label = "mcmc-results-2"
+            , caption = "Summary statistics of posterior distributions."
+            ) %>%
+    group_rows("IBM island", 1, 5) %>%
+    group_rows("IBM lattice", 6, 10) %>%
+    group_rows("IBM ring", 11, 15)
 ```
 
 \Cref{fig:plot} shows the posterior predictions of TAM spectra for the data

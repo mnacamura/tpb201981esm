@@ -13,7 +13,7 @@ data {
     /* Popularities */
     int<lower=1> k[l];
     /* Frequencies */
-    int<lower=1> m[l];
+    real<lower=0> m[l];
     /* Number of demes, given by the number of sites or groups */
     int<lower=1> D;
 }
