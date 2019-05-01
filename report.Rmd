@@ -104,7 +104,7 @@ Let $K_1^m = \{K_1, K_2, \cdots, K_m\}$ be popularities of cultural traits $1, 2
 probability to observe $K_i$ is, from the TAM spectrum, given by
 \begin{equation}
 \label{eq:normalized-TAM}
-p(K_i \mid D, \mu, e, h, \beta, \eta) = \frac{\xi_{K_i}}{\sum_{k=1}^D \xi_k}.
+p(K_i \mid D, \mu, b, h, \beta, \eta) = \frac{\xi_{K_i}}{\sum_{k=1}^D \xi_k}.
 \end{equation}
 \Cref{eq:normalized-TAM} apparently has six paremeters. However, the TAM
 spectrum can be rewritten to
@@ -116,7 +116,7 @@ spectrum can be rewritten to
 where
 \begin{align}
 C &= \frac{\mu^\prime}{\beta + \eta^\prime}(D-1), \\
-\mu^\prime &= \frac{\mu}{e}, \\
+\mu^\prime &= \frac{\mu}{b}, \\
 \lambda &= 1 + \frac{\eta^\prime}{\beta},
 \end{align}
 and
