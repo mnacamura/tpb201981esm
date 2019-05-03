@@ -226,6 +226,7 @@ summary_df <- results %>% purrr::map_dfr(function(fit) {
 ```
 
 ```{r results_1, echo = FALSE}
+write_csv(summary_df[1:35, ], file.path("cache", "summary_1.csv"))
 knitr::kable(summary_df[1:35, ], escape = FALSE, booktabs = TRUE
             , label = "mcmc-results-1"
             , caption = "Summary statistics of posterior distributions."
@@ -240,6 +241,7 @@ knitr::kable(summary_df[1:35, ], escape = FALSE, booktabs = TRUE
 ```
 
 ```{r results_2, echo = FALSE}
+write_csv(summary_df[36:50, ], file.path("cache", "summary_2.csv"))
 knitr::kable(summary_df[36:50, ], escape = FALSE, booktabs = TRUE
             , label = "mcmc-results-2"
             , caption = "Summary statistics of posterior distributions."
