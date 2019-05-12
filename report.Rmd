@@ -7,8 +7,6 @@ output:
     # latex_engine: lualatex
     toc: false
     number_sections: true
-    fig_width: 5
-    fig_height: 3.5
 indent: true
 header-includes: |
     \usepackage{indentfirst}
@@ -400,7 +398,7 @@ knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
     group_rows("IBM lattice t=200000", 26, 30)
 ```
 
-```{r plot_IBM, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM specta: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
+```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM specta: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
 empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
