@@ -1,20 +1,27 @@
 ---
 title: Fitting the TAM spectrum to empirical data
-author: Mitsuhiro Nakamura
-date: "`r Sys.time()`"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
-  pdf_document:
-    # latex_engine: lualatex
-    toc: false
-    number_sections: true
+    pdf_document:
+        keep_tex: false
+compact-title: false
+documentclass: article
+fontsize: 10pt
+papersize: a4
 indent: true
+graphics: true
+listings: true
+tables: true
 header-includes: |
     \usepackage{indentfirst}
-    \usepackage{listings}
     \usepackage[capitalize]{cleveref}
     \lstset{
       basicstyle={\small\ttfamily},
     }
+    \usepackage{authblk}
+    \author[1]{Mitsuhiro Nakamura}
+    \author[1]{Kenichi Aoki}
+    \affil[1]{MIMS}
 ---
 
 ```{r setup, include = FALSE}

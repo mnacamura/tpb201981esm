@@ -34,6 +34,8 @@ mkShell {
     })
   ];
 
+  LANG = "C";
+
   shellHook = ''
   '';
 }
