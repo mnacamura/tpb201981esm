@@ -409,7 +409,7 @@ summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
 write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
 knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
             , label = "summary-IBM"
-            , caption = "Ditto ... artificial data."
+            , caption = "Posterior distributions of TAM as applied to artificial data."
             ) %>%
     group_rows("IBM island", 1, 5) %>%
     group_rows("IBM lattice", 6, 10)
