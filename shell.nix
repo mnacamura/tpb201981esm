@@ -20,7 +20,7 @@ mkShell {
     tidyr
   ]) ++ (with haskellPackages; [
     pandoc
-    # pandoc-citeproc
+    pandoc-citeproc
   ]) ++ [
     xsv
     (texlive.combine {
