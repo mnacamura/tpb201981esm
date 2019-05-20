@@ -1,9 +1,10 @@
 ---
-title: Fitting the TAM spectrum to empirical data
+title: "Supplementary Information 2: \\protect\\linebreak Bayesian Inference of the TAM spectrum"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
-    pdf_document:
-        keep_tex: false
+  pdf_document:
+    number_sections: true
+    keep_tex: false
 compact-title: false
 documentclass: article
 fontsize: 10pt
@@ -20,8 +21,12 @@ header-includes: |
     }
     \usepackage{authblk}
     \author[1]{Mitsuhiro Nakamura}
+    \author[2]{Joe Yuichiro Wakano}
     \author[1]{Kenichi Aoki}
-    \affil[1]{MIMS}
+    \author[3]{Yutaka Kobayashi}
+    \affil[1]{Organization for the Strategic Coordination of Research and Intellectual Properties, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
+    \affil[2]{School of Interdisciplinary Mathematical Sciences, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
+    \affil[3]{Department of Management, Kochi University of Technology, Japan}
 ---
 
 ```{r setup, include = FALSE}
@@ -180,159 +185,42 @@ if (file.exists(cache)) {
 }
 ```
 
-# Statistical model
-
-Let $k_1^m = \{k_1, k_2, \cdots, k_m\}$ be popularities of cultural traits $1,
-2, \cdots, m$, respectively. We assume that they are i.i.d. and distributed
-according to the weights given by the TAM spectrum; the probability to observe
-$k_i = k$ ($k = 1, 2, \cdots, D$) is given by
-\begin{equation} \label{eq:normalized-TAM}
-p(k_i = k \mid \mu, b, h, \beta, \eta) = \frac{\xi_k}{\sum_{k=1}^D \xi_k}.
-\end{equation}
-\Cref{eq:normalized-TAM} apparently has five parameters (without known $D$).
-However, the TAM spectrum can be rewritten to
-\begin{subequations}
-\begin{equation}
-\xi_k = C\frac{\lambda^k}{k} \prod_{i=1}^k \frac{D + 1 - i}{D + \theta - i}
-      = C\frac{\lambda^k}{k} \frac{\Gamma(D + 1)\Gamma(D + \theta - k)}{\Gamma(D + 1 - k)\Gamma(D + \theta)}
-\end{equation}
-where
-\begin{align}
-C &= \frac{\mu^\prime}{\beta + \eta^\prime}(D-1), \\
-\mu^\prime &= \frac{\mu}{b}, \\
-\lambda &= 1 + \frac{\eta^\prime}{\beta},
-\end{align}
-and
-\begin{align}
-\theta &= \frac{1-\beta}{\beta}(D-1).
-\end{align}
-\end{subequations}
-\noindent Thus, \cref{eq:normalized-TAM} actually has two parameters:
-$\lambda$ and $\theta$. Note that $C$ is dropped due to normalization in
-\cref{eq:normalized-TAM}, and $\beta$ and $\eta^\prime$ are recovered from
-$D$, $\lambda$, and $\theta$ as
-\begin{subequations}
-\begin{equation}
-\beta = \frac{D - 1}{D - 1 + \theta}
-\end{equation}
-and
-\begin{equation}
-\eta^\prime = \beta (\lambda - 1).
-\end{equation}
-\end{subequations}
-
-Because we do not care about the index of each cultural trait in the
-data $k_1^m$, the likelihood to observe a spectrum, i.e.
-\begin{equation}
-\label{eq:data-as-table}
-S = \left\{ (k, m_k) \mid k \in \{1, 2, \cdots, D\}, m_k = \#\{k^\prime \in k_1^m \mid k^\prime = k\} \right\},
-\end{equation}
-is given by a multinomial distribution
-\begin{equation}
-\mathcal{L}(\lambda, \theta \mid S) = \frac{m!}{\prod_{k=1}^D m_k!} \prod_{k=1}^D p(k \mid \lambda, \theta)^{m_k},
-\end{equation}
-where $p(k \mid \lambda, \theta)$ is identical to \cref{eq:normalized-TAM}.
-Note that $\sum_{k=1}^D m_k = m$ holds true.
-Finally, the log-likelihood for the spectrum is given by
-\begin{subequations}
-\label{eq:log-likelihood}
-\begin{align}
-\ell(\lambda, \theta \mid S) =& -\sum_{k=1}^D m_k \log k + \sum_{k=1}^D m_k k
-\log \lambda + m \log\Gamma(D + 1) + \sum_{k=1}^D m_k \log\Gamma(D + \theta - k) \nonumber \\
-&- \sum_{k=1}^D m_k \log\Gamma(D + 1 - k) - m \log\Gamma(D + \theta)
-- m \log Z(\lambda, \theta) + const.,
-\end{align}
-where
-\begin{equation}
-Z(\lambda, \theta) = \sum_{k=1}^D \frac{\lambda^k}{k}\frac{\Gamma(D + 1)\Gamma(D + \theta - k)}{\Gamma(D + 1 - k)\Gamma(D + \theta)}.
-\end{equation}
-\end{subequations}
-
 # Bayesian MCMC
 
-Using \cref{eq:log-likelihood}, we estimated parameters for each of
-the empirical data sets (Aurignacian beads, Neolithic pottery, Neolithic
-ornaments, California basketry, Canoe stylistic, Canoe functional, and WNAI
-technology) by means of Bayesian MCMC.
-
-To check the effect of population structure on the estimation using the TAM
-model, we also estimated parameters for the artificial data sets extracted
-from our IBM (IBM island and IBM lattice).
-From each simulation result of IBM island and lattice used in the main text,
-we took 10 population snapshots at time steps $191,000, 192,000, \cdots,
-200,000$ and use the all snapshots for the check.
+Using Main Text Eq.\ (11), we estimated parameters of the TAM spectrum for each
+of the empirical data sets (introduced in Main Text Sec.\ 2) and the artificial
+data sets (Main Text Sec.\ 4) by means of Bayesian MCMC.
 
 Performing MCMC, we use Stan, version 2.18.2, with which we employed NUTS
 algorithm with tuning parameters \lstinline{adapt_delta = .998} and
 \lstinline{max_treedepth = 15}.
 We set the other tuning parameters to their default values. We run eight
 chains of $2,000$ MCMC steps in which first $1,000$ warm-up steps were dropped
-to calculate posterior distributions.
+to compute posterior distributions.
 Listing \ref{lst:stan-code} shows the Stan code used for our estimation.
 In our estimation, we fixed $D$ to the number of all sites or groups in each
 empirical data set. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
 distributions with scale parameter $5$.
 
-\newpage
 \lstinputlisting[label={lst:stan-code},caption={Stan code.}]{model.stan}
 \newpage
 
-# Results
+# Results of the empirical data sets
 
-\Cref{tab:summary-empirical,tab:summary-IBM} show the summaries of obtained
-posterior distributions for the empirical and artificial data sets,
-respectively.
-For all the parameters in all the data sets, $\hat{R}$ is almost equal to $1$,
-indicating that MCMC chains reached relaxation.
-Moreover, the effective sample size, $n_{\rm eff}$, is sufficiently large for
-all the cases.
+The obtained posterior distributions for the empirical data sets (Main Text
+Tab.\ 1) were sufficiently fine:
+for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
+indicating that the MCMC chains reached relaxation;
+and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
+cases.
 
-\Cref{fig:plot-empirical,fig:plot-IBM} show the posterior predictions of TAM spectra for
-the empirical and artificial data sets, respectively.
-These predictions were obtained from \cref{eq:normalized-TAM} scaled by the
+\Cref{fig:plot-empirical} shows the posterior predictions of TAM for the
+empirical data sets.
+These predictions were obtained from Main Text Eq.\ (7) scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
 
-```{r summary_empirical}
-summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
-    df <- summary(fit)$summary %>% as_tibble %>% round(3)
-    df <- df[1:5, c(1, 3:ncol(df))] %>%
-        add_column( param = c( "$\\lambda$"
-                             , "$\\theta$"
-                             , "$\\beta$"
-                             , "$\\eta^\\prime$"
-                             , "$\\beta + \\eta^\\prime$"
-                             )
-                  , .before = TRUE
-                  )
-    colnames(df) <- c( "Parameter"
-                     , "Mean"
-                     , "SD"
-                     , "2.5\\%"
-                     , "25\\%"
-                     , "50\\%"
-                     , "75\\%"
-                     , "97.5\\%"
-                     , "$n_{\\rm eff}$"
-                     , "$\\hat{R}$"
-                     )
-    df
-})
-write_csv(summary_empirical, file.path("cache", "summary_empirical.csv"))
-knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
-            , label = "summary-empirical"
-            , caption = "Summary statistics of posterior distributions."
-            ) %>%
-    group_rows("Aurignacian beads", 1, 5) %>%
-    group_rows("Neolithic pottery", 6, 10) %>%
-    group_rows("Neolithic ornaments", 11, 15) %>%
-    group_rows("California basketry", 16, 20) %>%
-    group_rows("Canoe stylistic", 21, 25) %>%
-    group_rows("Canoe functional", 26, 30) %>%
-    group_rows("WNAI technology", 31, 35)
-```
-
-```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM specta: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
+```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
 empirical_df <- data_sets$empirical %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
@@ -381,41 +269,26 @@ ggplot(empirical_df, aes(x = popularity)) +
         )
 ```
 
-```{r summary_IBM}
-summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
-    df <- summary(fit)$summary %>% as_tibble %>% round(3)
-    df <- df[1:5, c(1, 3:ncol(df))] %>%
-        add_column( param = c( "$\\lambda$"
-                             , "$\\theta$"
-                             , "$\\beta$"
-                             , "$\\eta^\\prime$"
-                             , "$\\beta + \\eta^\\prime$"
-                             )
-                  , .before = TRUE
-                  )
-    colnames(df) <- c( "Parameter"
-                     , "Mean"
-                     , "SD"
-                     , "2.5\\%"
-                     , "25\\%"
-                     , "50\\%"
-                     , "75\\%"
-                     , "97.5\\%"
-                     , "$n_{\\rm eff}$"
-                     , "$\\hat{R}$"
-                     )
-    df
-})
-write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
-knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
-            , label = "summary-IBM"
-            , caption = "Summary statistics of posterior distributions."
-            ) %>%
-    group_rows("IBM island", 1, 5) %>%
-    group_rows("IBM lattice", 6, 10)
-```
+# Results of the artificial data sets
 
-```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM specta: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
+From each simulation result of the IBM island and lattice models used in Main
+Text Sec.\ 4, we took 10 population snapshots at time steps $191,000, 192,000,
+\cdots, 200,000$ and use the all snapshots to infer the parameters.
+
+The obtained posterior distributions for the artificial data sets (Main Text
+Tab.\ 2) were sufficiently fine:
+for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
+indicating that the MCMC chains reached relaxation;
+and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
+cases.
+
+\Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
+data sets.
+These predictions were again obtained from Main Text Eq.\ (7) scaled by the
+number of cultural traits and the posterior distributions of $\lambda$ and
+$\theta$.
+
+```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
 empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
@@ -462,6 +335,84 @@ ggplot(empirical_df, aes(x = popularity)) +
     labs( x = "Popularity"
         , y = "Frequency"
         )
+```
+
+\pagestyle{empty}
+\newpage
+
+```{r summary_empirical}
+summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
+    df <- summary(fit)$summary %>% as_tibble %>% round(3)
+    df <- df[1:5, c(1, 3:ncol(df))] %>%
+        add_column( param = c( "$\\lambda$"
+                             , "$\\theta$"
+                             , "$\\beta$"
+                             , "$\\eta^\\prime$"
+                             , "$\\beta + \\eta^\\prime$"
+                             )
+                  , .before = TRUE
+                  )
+    colnames(df) <- c( "Parameter"
+                     , "Mean"
+                     , "SD"
+                     , "2.5\\%"
+                     , "25\\%"
+                     , "50\\%"
+                     , "75\\%"
+                     , "97.5\\%"
+                     , "$n_{\\rm eff}$"
+                     , "$\\hat{R}$"
+                     )
+    df
+})
+write_csv(summary_empirical, file.path("cache", "summary_empirical.csv"))
+knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
+            , label = "summary-empirical"
+            , caption = "Posterior distributions of TAM as applied to empirical data."
+            ) %>%
+    group_rows("Aurignacian beads", 1, 5) %>%
+    group_rows("Neolithic pottery", 6, 10) %>%
+    group_rows("Neolithic ornaments", 11, 15) %>%
+    group_rows("California basketry", 16, 20) %>%
+    group_rows("Canoe stylistic", 21, 25) %>%
+    group_rows("Canoe functional", 26, 30) %>%
+    group_rows("WNAI technology", 31, 35)
+```
+
+\newpage
+
+```{r summary_IBM}
+summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
+    df <- summary(fit)$summary %>% as_tibble %>% round(3)
+    df <- df[1:5, c(1, 3:ncol(df))] %>%
+        add_column( param = c( "$\\lambda$"
+                             , "$\\theta$"
+                             , "$\\beta$"
+                             , "$\\eta^\\prime$"
+                             , "$\\beta + \\eta^\\prime$"
+                             )
+                  , .before = TRUE
+                  )
+    colnames(df) <- c( "Parameter"
+                     , "Mean"
+                     , "SD"
+                     , "2.5\\%"
+                     , "25\\%"
+                     , "50\\%"
+                     , "75\\%"
+                     , "97.5\\%"
+                     , "$n_{\\rm eff}$"
+                     , "$\\hat{R}$"
+                     )
+    df
+})
+write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
+knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
+            , label = "summary-IBM"
+            , caption = "Ditto ... artificial data."
+            ) %>%
+    group_rows("IBM island", 1, 5) %>%
+    group_rows("IBM lattice", 6, 10)
 ```
 
 <!-- vim: set fdm=syntax: -->

@@ -1,4 +1,4 @@
-NAME := report
+NAME := supinfo2
 
 $(NAME).pdf: $(NAME).Rmd
 	Rscript -e "rmarkdown::render('$(NAME).Rmd')"
