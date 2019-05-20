@@ -224,7 +224,7 @@ These predictions were obtained from Main Text Eq.\ (7) scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
 
-```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
+```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$empirical %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
@@ -265,6 +265,7 @@ ggplot(empirical_df, aes(x = popularity)) +
     geom_line( aes(y = freq_mean)
              , data = theoretical_df
              , color = "red"
+             , size = .4
              ) +
   # scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
   # scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
@@ -292,7 +293,7 @@ These predictions were again obtained from Main Text Eq.\ (7) scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
 
-```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons)."}
+```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
@@ -333,6 +334,7 @@ ggplot(empirical_df, aes(x = popularity)) +
     geom_line( aes(y = freq_mean)
              , data = theoretical_df
              , color = "red"
+             , size = .4
              ) +
   # scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
   # scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
