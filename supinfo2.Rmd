@@ -193,13 +193,14 @@ if (file.exists(cache)) {
 
 Using Main Text Eq.\ (11), we estimated parameters of the TAM spectrum for each
 of the empirical data sets (introduced in Main Text Sec.\ 2) and the artificial
-data sets (Main Text Sec.\ 4) by means of Bayesian MCMC.
+data sets (Main Text Sec.\ 4) by means of a Bayesian Markov chain Monte Carlo
+(MCMC) method.
 
-Performing MCMC, we use Stan, version 2.18.2, with which we employed NUTS
-algorithm with tuning parameters \lstinline{adapt_delta = .998} and
+Performing MCMC sampling, we used Stan, version 2.18.2, with which we employed
+NUTS algorithm with tuning parameters \lstinline{adapt_delta = .998} and
 \lstinline{max_treedepth = 15}.
-We set the other tuning parameters to their default values. We run eight
-chains of $2,000$ MCMC steps in which first $1,000$ warm-up steps were dropped
+We set the other tuning parameters to their default values. We ran eight
+MCMC chains of $2,000$ steps in which first $1,000$ warm-up steps were dropped
 to compute posterior distributions.
 Listing \ref{lst:stan-code} shows the Stan code used for our estimation.
 In our estimation, we fixed $D$ to the number of all sites or groups in each
@@ -224,7 +225,7 @@ These predictions were obtained from Main Text Eq.\ (7) scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
 
-```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that 95\\% CIs may be too thin to be seen."}
+```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$empirical %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
@@ -278,7 +279,7 @@ ggplot(empirical_df, aes(x = popularity)) +
 
 From each simulation result of the IBM island and lattice models used in Main
 Text Sec.\ 4, we took 10 population snapshots at time steps $191,000, 192,000,
-\cdots, 200,000$ and use the all snapshots to infer the parameters.
+\cdots, 200,000$ and used the all snapshots to infer the parameters.
 
 The obtained posterior distributions for the artificial data sets (Main Text
 Tab.\ 2) were sufficiently fine:
@@ -290,10 +291,10 @@ cases.
 \Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
 data sets.
 These predictions were again obtained from Main Text Eq.\ (7) scaled by the
-number of cultural traits and the posterior distributions of $\lambda$ and
-$\theta$.
+number of cultural traits (per snapshot in average) and the posterior
+distributions of $\lambda$ and $\theta$.
 
-```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that 95\\% CIs may be too thin to be seen."}
+```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
   # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
