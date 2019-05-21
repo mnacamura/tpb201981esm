@@ -4,7 +4,7 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   pdf_document:
     number_sections: true
-    keep_tex: false
+    keep_tex: true
 compact-title: false
 documentclass: article
 fontsize: 10pt
