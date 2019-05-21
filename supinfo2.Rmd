@@ -208,7 +208,6 @@ empirical data set. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
 distributions with scale parameter $5$.
 
 \lstinputlisting[label={lst:stan-code},caption={Stan code.}]{model.stan}
-\newpage
 
 # Results of the empirical data sets
 
@@ -224,6 +223,25 @@ empirical data sets.
 These predictions were obtained from Main Text Eq.\ (7) scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
+
+# Results of the artificial data sets
+
+From each simulation result of the IBM island and lattice models used in Main
+Text Sec.\ 4, we took 10 population snapshots at time steps $191,000, 192,000,
+\cdots, 200,000$ and used the all snapshots to infer the parameters.
+
+The obtained posterior distributions for the artificial data sets (Main Text
+Tab.\ 2) were sufficiently fine:
+for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
+indicating that the MCMC chains reached relaxation;
+and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
+cases.
+
+\Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
+data sets.
+These predictions were again obtained from Main Text Eq.\ (7) scaled by the
+number of cultural traits (per snapshot in average) and the posterior
+distributions of $\lambda$ and $\theta$.
 
 ```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$empirical %>% purrr::map_dfr(function(data_set) {
@@ -275,25 +293,6 @@ ggplot(empirical_df, aes(x = popularity)) +
         )
 ```
 
-# Results of the artificial data sets
-
-From each simulation result of the IBM island and lattice models used in Main
-Text Sec.\ 4, we took 10 population snapshots at time steps $191,000, 192,000,
-\cdots, 200,000$ and used the all snapshots to infer the parameters.
-
-The obtained posterior distributions for the artificial data sets (Main Text
-Tab.\ 2) were sufficiently fine:
-for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
-indicating that the MCMC chains reached relaxation;
-and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
-cases.
-
-\Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
-data sets.
-These predictions were again obtained from Main Text Eq.\ (7) scaled by the
-number of cultural traits (per snapshot in average) and the posterior
-distributions of $\lambda$ and $\theta$.
-
 ```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
 empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
   # data_set$table$popularity <- data_set$table$popularity / data_set$D
@@ -344,8 +343,8 @@ ggplot(empirical_df, aes(x = popularity)) +
         )
 ```
 
-\pagestyle{empty}
-\newpage
+\clearpage{\thispagestyle{empty}}
+\renewcommand{\thetable}{\arabic{table}}
 
 ```{r summary_empirical}
 summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
@@ -386,7 +385,7 @@ knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
     group_rows("WNAI technology", 31, 35)
 ```
 
-\newpage
+\clearpage{\thispagestyle{empty}}
 
 ```{r summary_IBM}
 summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
