@@ -26,7 +26,7 @@ header-includes: |
     \author[3]{Yutaka Kobayashi}
     \affil[1]{Organization for the Strategic Coordination of Research and Intellectual Properties, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
     \affil[2]{School of Interdisciplinary Mathematical Sciences, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
-    \affil[3]{Department of Management, Kochi University of Technology, Japan}
+    \affil[3]{School of Economics and Management, Kochi University of Technology, Japan}
     \renewcommand{\thesection}{S2.\arabic{section}}
     \renewcommand{\theequation}{S2.\arabic{equation}}
     \renewcommand{\thetable}{S2.\arabic{table}}
