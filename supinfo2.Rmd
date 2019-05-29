@@ -1,5 +1,5 @@
 ---
-title: "Appendix S2: \\protect\\linebreak Bayesian Inference of the TAM spectrum"
+title: "Appendix S1: \\protect\\linebreak Bayesian Inference of the TAM spectrum"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   pdf_document:
@@ -27,10 +27,10 @@ header-includes: |
     \affil[1]{Organization for the Strategic Coordination of Research and Intellectual Properties, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
     \affil[2]{School of Interdisciplinary Mathematical Sciences, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
     \affil[3]{School of Economics and Management, Kochi University of Technology, Japan}
-    \renewcommand{\thesection}{S2.\arabic{section}}
-    \renewcommand{\theequation}{S2.\arabic{equation}}
-    \renewcommand{\thetable}{S2.\arabic{table}}
-    \renewcommand{\thefigure}{S2.\arabic{figure}}
+    \renewcommand{\thesection}{S1.\arabic{section}}
+    \renewcommand{\theequation}{S1.\arabic{equation}}
+    \renewcommand{\thetable}{S1.\arabic{table}}
+    \renewcommand{\thefigure}{S1.\arabic{figure}}
 ---
 
 ```{r setup, include = FALSE}

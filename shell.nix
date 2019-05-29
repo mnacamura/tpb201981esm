@@ -22,6 +22,7 @@ mkShell {
     pandoc
     pandoc-citeproc
   ]) ++ [
+    ocamlPackages.cpdf
     xsv
     (texlive.combine {
       inherit (texlive)
