@@ -191,9 +191,9 @@ if (file.exists(cache)) {
 
 # Bayesian MCMC
 
-Using Main Text Eq.\ (11), we estimated parameters of the TAM spectrum for each
-of the empirical data sets (introduced in Main Text Sec.\ 2) and the artificial
-data sets (Main Text Sec.\ 4) by means of a Bayesian Markov chain Monte Carlo
+Using Eq.\ (11) in the main text, we estimated parameters of the TAM spectrum for each
+of the empirical data sets (introduced in the main text, Sec.\ 2) and the artificial
+data sets (ditto, Sec.\ 4) by means of a Bayesian Markov chain Monte Carlo
 (MCMC) method.
 
 Performing MCMC sampling, we used Stan, version 2.18.2, with which we employed
@@ -211,8 +211,8 @@ distributions with scale parameter $5$.
 
 # Results of the empirical data sets
 
-The obtained posterior distributions for the empirical data sets (Main Text
-Tab.\ 1) were sufficiently fine:
+The obtained posterior distributions for the empirical data sets (Tab.\ 1 in
+the main text) were sufficiently fine:
 for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
 indicating that the MCMC chains reached relaxation;
 and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
@@ -220,18 +220,18 @@ cases.
 
 \Cref{fig:plot-empirical} shows the posterior predictions of TAM for the
 empirical data sets.
-These predictions were obtained from Main Text Eq.\ (7) scaled by the
+These predictions were obtained from Eq.\ (7) in the main text scaled by the
 number of cultural traits and the posterior distributions of $\lambda$ and
 $\theta$.
 
 # Results of the artificial data sets
 
-From each simulation result of the IBM island and lattice models used in Main
-Text Sec.\ 4, we took 10 population snapshots at time steps $191,000, 192,000,
+From each simulation result of the IBM island and lattice models used in Sec.\ 4
+in the main text, we took 10 population snapshots at time steps $191,000, 192,000,
 \cdots, 200,000$ and used the all snapshots to infer the parameters.
 
-The obtained posterior distributions for the artificial data sets (Main Text
-Tab.\ 2) were sufficiently fine:
+The obtained posterior distributions for the artificial data sets (Tab.\ 2 in
+the main text) were sufficiently fine:
 for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
 indicating that the MCMC chains reached relaxation;
 and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
@@ -239,7 +239,7 @@ cases.
 
 \Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
 data sets.
-These predictions were again obtained from Main Text Eq.\ (7) scaled by the
+These predictions were again obtained from Eq.\ (7) in the main text scaled by the
 number of cultural traits (per snapshot in average) and the posterior
 distributions of $\lambda$ and $\theta$.
 
