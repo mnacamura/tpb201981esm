@@ -22,3 +22,5 @@ table_2.pdf: $(SRC).pdf
 	cpdf $< -range 6 -o $@
 
 PHONY: build clean distclean
+
+DEFAULT: build
