@@ -347,6 +347,12 @@ ggplot(empirical_df, aes(x = popularity)) +
 \renewcommand{\thetable}{\arabic{table}}
 
 ```{r summary_empirical}
+mcmc_stats_desc <- paste( "The estimated posterior mean and standard deviation for each parameter are shown in Mean and SD columns."
+                        , "The columns named 2.5\\%, 25\\%, 50\\%, 75\\%, and 97.5\\% show respective quantiles of the estimated posterior distributions."
+                        , "$n_{\\rm eff}$ is the effective sample size of the autocorrelated MCMC samples, indicating the \\textit{would-be} sample size if they were regarded as independent."
+                        , "$\\hat{R}$ is the potential scale reduction statistic, indicating whether the MCMC chains have reached relaxation or not (they have if $\\hat{R}$ is close to 1)."
+                        )
+
 summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
     df <- summary(fit)$summary %>% as_tibble %>% round(3)
     df <- df[1:5, c(1, 3:ncol(df))] %>%
@@ -374,7 +380,7 @@ summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
 write_csv(summary_empirical, file.path("cache", "summary_empirical.csv"))
 knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
             , label = "summary-empirical"
-            , caption = "Posterior distributions of TAM as applied to empirical data."
+            , caption = paste("Posterior distributions of TAM as applied to empirical data.", mcmc_stats_desc)
             ) %>%
     group_rows("Aurignacian beads", 1, 5) %>%
     group_rows("Neolithic pottery", 6, 10) %>%
@@ -415,7 +421,7 @@ summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
 write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
 knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
             , label = "summary-IBM"
-            , caption = "Posterior distributions of TAM as applied to artificial data."
+            , caption = paste("Posterior distributions of TAM as applied to artificial data.", mcmc_stats_desc)
             ) %>%
     group_rows("IBM island", 1, 5) %>%
     group_rows("IBM lattice", 6, 10)
