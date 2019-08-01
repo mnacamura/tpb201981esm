@@ -1,4 +1,17 @@
-with import <nixpkgs> {};
+let
+  nixpkgs = fetchNixpkgs {
+    rev = "282041fb7b2cc0fcc031cedfd66b2fbf880fa6ee";
+    sha256 = "1lr1xg9k989xn6zci06p45jrv0izsyxwsd3hrvf2cazbxr0ihkgm";
+  };
+
+  fetchNixpkgs = { rev, sha256 }:
+  builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+    inherit sha256;
+  };
+in
+
+with import nixpkgs {};
 
 mkShell {
   buildInputs = [
