@@ -13,13 +13,13 @@ $(SRC).pdf: $(SRC).Rmd
 	Rscript -e "rmarkdown::render('$(SRC).Rmd')"
 
 $(MAIN).pdf: $(SRC).pdf
-	cpdf $< -range 1-4 -o $@
+	cpdf $< -range 1-3 -o $@
 
 table_1.pdf: $(SRC).pdf
-	cpdf $< -range 5 -o $@
+	cpdf $< -range 4 -o $@
 
 table_2.pdf: $(SRC).pdf
-	cpdf $< -range 6 -o $@
+	cpdf $< -range 5 -o $@
 
 PHONY: build clean distclean
 
