@@ -14,19 +14,20 @@ graphics: true
 listings: true
 tables: true
 header-includes: |
-    \usepackage{indentfirst}
-    \usepackage[capitalize]{cleveref}
-    \lstset{
-      basicstyle={\small\ttfamily},
-    }
     \usepackage{authblk}
     \author[1]{Mitsuhiro Nakamura}
     \author[2]{Joe Yuichiro Wakano}
     \author[1]{Kenichi Aoki}
     \author[3]{Yutaka Kobayashi}
-    \affil[1]{Organization for the Strategic Coordination of Research and Intellectual Properties, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
-    \affil[2]{School of Interdisciplinary Mathematical Sciences, Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
+    \affil[1]{Organization for the Strategic Coordination of Research and Intellectual Properties,
+        Meiji University, Nakano 4-21-1, Nakano-ku, Tokyo 164-8525, Japan}
+    \affil[2]{School of Interdisciplinary Mathematical Sciences, Meiji University, Nakano 4-21-1,
+        Nakano-ku, Tokyo 164-8525, Japan}
     \affil[3]{School of Economics and Management, Kochi University of Technology, Japan}
+
+    \usepackage{indentfirst}
+    \usepackage[capitalize]{cleveref}
+    \lstset{basicstyle={\small\ttfamily}}
     \renewcommand{\thesection}{S1.\arabic{section}}
     \renewcommand{\theequation}{S1.\arabic{equation}}
     \renewcommand{\thetable}{S1.\arabic{table}}
@@ -36,7 +37,6 @@ header-includes: |
 ```{r setup, include = FALSE}
 library(doParallel)
 library(ggplot2)
-library(glue)
 library(kableExtra)
 library(knitr)
 library(magrittr)
@@ -45,95 +45,104 @@ library(rstan)
 library(stringr)
 library(tibble)
 
-knitr::opts_chunk$set(echo = FALSE)
-knitr::opts_chunk$set(cashe = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(warning = FALSE)
-knitr::opts_chunk$set(out.width = '\\textwidth')
 options(scipen = 100)
+
+## knitr options
+opts_chunk$set(echo = FALSE)
+opts_chunk$set(cashe = TRUE)
+opts_chunk$set(message = FALSE)
+opts_chunk$set(warning = FALSE)
+opts_chunk$set(out.width = '\\textwidth')
 options(knitr.table.format = "latex")
+
+## ggplot2 options
 theme_set(theme_light(base_size = 10) +
     theme(panel.spacing = unit(1, "lines")))
 
-Ds <- read_csv( file.path("data-raw", "D.csv")
-              , col_types = list(label = col_character(), D = col_integer())
-              ) %>% tidyr::spread(label, D) %>% as.list
+## stan options
+stan_args <- list( control = list(adapt_delta = .998, max_treedepth = 15)
+                 , cores = 1
+                 , chains = 8
+                 , iter = 2000
+                 , warmup = 1000
+                 )
 
+## D for each data set
+ds <- read_csv( file.path("data-raw", "d.csv")
+              , col_types = cols(label = col_character(), D = col_integer())
+              ) %>%
+    tidyr::spread(label, D) %>%
+    as.list()
+
+## Popularity spectra for empirical data sets
 data_sets <- list()
-data_sets$empirical <- local({
-    c( "aurignacian_beads"
-     , "neolithic_pottery"
-     , "neolithic_ornaments"
-     , "california_basketry"
-     , "canoe_stylistic"
-     , "canoe_functional"
-     , "WNAI_technology"
-     ) %>% purrr::map(function(name) {
-        df <- read_csv( file.path("data-raw", glue(name, ".csv"))
-                      , col_types = list( popularity = col_integer()
-                                        , frequency = col_double()
-                                        )
-                      ) %>% dplyr::filter(!is.na(frequency) & frequency > 0)
-        result <- list()
-        result[[name]] <- list( label = gsub("_", " ", name) %>% {
-                                   if (grepl("WNAI", .))
-                                       identity(.)
-                                   else
-                                       str_to_sentence(.)
-                                }
-                              , D = Ds[[name]]
-                              , table = df
-                              )
-        result
-    }) %>% do.call(c, .)
-})
+data_sets[["empirical"]] <- c( "aurignacian_beads"
+                             , "neolithic_pottery"
+                             , "neolithic_ornaments"
+                             , "california_basketry"
+                             , "canoe_stylistic"
+                             , "canoe_functional"
+                             , "wnai_technology"
+                             ) %>%
+    purrr::map(function(name) {
+                   label <- name %>%
+                       gsub("_", " ", .) %>%
+                       { if (grepl("wnai", .)) gsub("wnai", "WNAI", .) else str_to_sentence(.) }
+                   table <- read_csv( file.path("data-raw", paste(name, ".csv", sep = ""))
+                                    , col_types = cols(.default = col_integer())
+                                    ) %>%
+                       dplyr::filter(!is.na(frequency) & frequency > 0)
+                   result <- list()
+                   result[[name]] <- list(label = label, d = ds[[name]], table = table)
+                   result
+               }) %>%
+    purrr::flatten()
 
-data_sets$IBM <- local({
-    c( paste("IBM_island_t=", 200000 - 1000 * 0:9, sep = "")
-     , paste("IBM_lattice_t=", 200000 - 1000 * 0:9, sep = "")
-     ) %>% purrr::map(function(name) {
-        prefix <- sub("(IBM_\\w+)_.+", "\\1", name, perl = TRUE)
-        suffix <- sub("IBM_\\w+_(.+)", "\\1", name, perl = TRUE)
-        df <- read_csv( file.path("data-raw", glue(prefix, ".csv"))
-                      , col_types = list( popularity = col_integer()
-                                        , .default = col_double()
-                                        )
-                      )
-        df <- df[, c("popularity", suffix)]
-        colnames(df) <- c("popularity", "frequency")
-        df <- df %>% dplyr::filter(!is.na(frequency) & frequency > 0)
-        result <- list()
-        result[[name]] <- list( label = gsub("_", " ", name) %>% {
-                                   if (grepl("IBM", .))
-                                       identity(.)
-                                   else
-                                       str_to_sentence(.)
-                                }
-                              , D = Ds[[prefix]]
-                              , table = df
-                              )
-        result
-    }) %>% do.call(c, .)
-})
+## Popularity spectra for simulation data sets at time steps 200000 - 1000 * 0:9
+data_sets[["simulation"]] <- c( paste("simulation_island_t=", 200000 - 1000 * 0:9, sep = "")
+                              , paste("simulation_lattice_t=", 200000 - 1000 * 0:9, sep = "")
+                              ) %>%
+    purrr::map(function(name) {
+                   name_ <- sub("(simulation_\\w+)_.+", "\\1", name, perl = TRUE)
+                   time_step <- sub("simulation_\\w+_(.+)", "\\1", name, perl = TRUE)
+                   label <- name %>%
+                       gsub("_", " ", .) %>%
+                       gsub("simulation", "IBM", .)
+                   table <- read_csv( file.path("data-raw", paste(name_, ".csv", sep = ""))
+                                    , col_types = cols(.default = col_integer())
+                                    ) %>%
+                       dplyr::select(popularity, !!time_step) %>%
+                       dplyr::rename(frequency := !!time_step) %>%
+                       dplyr::filter(!is.na(frequency) & frequency > 0)
+                   result <- list()
+                   result[[name]] <- list(label = label, d = ds[[name_]], table = table)
+                   result
+               }) %>%
+    purrr::flatten()
 
-data_sets$IBM$IBM_island <- list (
+## Combine time steps for each simulation data set
+data_sets[["simulation"]][["simulation_island"]] <- list(
       label = "IBM island"
-    , D = Ds$IBM_island
-    , table = data_sets$IBM[grepl("island", names(data_sets$IBM))] %>% purrr::map_dfr(~ .$table)
+    , d = ds[["simulation_island"]]
+    , table = data_sets[["simulation"]][grepl("island", names(data_sets[["simulation"]]))] %>%
+          purrr::map_dfr(~ .$table)
     )
-data_sets$IBM[grepl("IBM_island_", names(data_sets$IBM))] <- NULL
-data_sets$IBM$IBM_lattice <- list (
+data_sets[["simulation"]][grepl("simulation_island_t=", names(data_sets[["simulation"]]))] <- NULL
+data_sets[["simulation"]][["simulation_lattice"]] <- list(
       label = "IBM lattice"
-    , D = Ds$IBM_lattice
-    , table = data_sets$IBM[grepl("lattice", names(data_sets$IBM))] %>% purrr::map_dfr(~ .$table)
+    , d = ds[["simulation_lattice"]]
+    , table = data_sets[["simulation"]][grepl("lattice", names(data_sets[["simulation"]]))] %>%
+          purrr::map_dfr(~ .$table)
     )
-data_sets$IBM[grepl("IBM_lattice_", names(data_sets$IBM))] <- NULL
+data_sets[["simulation"]][grepl("simulation_lattice_t=", names(data_sets[["simulation"]]))] <- NULL
 
-theory <- local({
-    log_xi <- function(k, D, lambda, theta)
-        -log(k) + k * log(lambda) + lgamma(D + 1) + lgamma(D + theta - k) - lgamma(D + 1 - k) - lgamma(D + theta)
-    function(ks, D, lambda, theta)
-    exp(log_xi(ks, D, lambda, theta)) / sum(exp(log_xi(1:D, D, lambda, theta)))
+## TAM spectra function
+tam <- local({
+    log_xi <- function(k, d, lambda, theta)
+        -log(k) + k * log(lambda) +
+            lgamma(d + 1) + lgamma(d + theta - k) - lgamma(d + 1 - k) - lgamma(d + theta)
+    function(k, d, lambda, theta)
+    exp(log_xi(k, d, lambda, theta)) / sum(exp(log_xi(1:d, d, lambda, theta)))
 })
 ```
 
@@ -145,242 +154,233 @@ if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results_empirical <- foreach(data_set = data_sets$empirical) %dopar% sampling(
-          model
-        , control = list( adapt_delta = .998
-                        , max_treedepth = 15
-                        )
-        , cores = 1
-        , chains = 8
-        , iter = 2000
-        , warmup = 1000
-        , data = list( l = nrow(data_set$table)
-                     , k = data_set$table$popularity
-                     , m = data_set$table$frequency
-                     , D = data_set$D
-                     )
-        )
-    names(results_empirical) <- names(data_sets$empirical)
+    results_empirical <- foreach(data_set = data_sets[["empirical"]]) %dopar% {
+        data <- list( l = nrow(data_set[["table"]])
+                    , k = data_set[["table"]][["popularity"]]
+                    , m = data_set[["table"]][["frequency"]]
+                    , D = data_set[["d"]]
+                    )
+        do.call(sampling, c(list(object = model, data = data), stan_args))
+    }
+    names(results_empirical) <- names(data_sets[["empirical"]])
     save(results_empirical, file = cache)
 }
 
-cache <- file.path("cache", "results_IBM.RData")
+cache <- file.path("cache", "results_simulation.RData")
 if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results_IBM <- foreach(data_set = data_sets$IBM) %dopar% sampling(
-          model
-        , control = list( adapt_delta = .998
-                        , max_treedepth = 15
-                        )
-        , cores = 1
-        , chains = 8
-        , iter = 2000
-        , warmup = 1000
-        , data = list( l = nrow(data_set$table)
-                     , k = data_set$table$popularity
-                     , m = data_set$table$frequency
-                     , D = data_set$D
-                     )
-        )
-    names(results_IBM) <- names(data_sets$IBM)
-    save(results_IBM, file = cache)
+    results_simulation <- foreach(data_set = data_sets[["simulation"]]) %dopar% {
+        data <- list( l = nrow(data_set[["table"]])
+                    , k = data_set[["table"]][["popularity"]]
+                    , m = data_set[["table"]][["frequency"]]
+                    , D = data_set[["d"]]
+                    )
+        do.call(sampling, c(list(object = model, data = data), stan_args))
+    }
+    names(results_simulation) <- names(data_sets[["simulation"]])
+    save(results_simulation, file = cache)
 }
 ```
 
 # Bayesian MCMC
 
-Using Eq.\ (11) in the main text, we estimated parameters of the TAM spectrum for each
-of the empirical data sets (introduced in the main text, Sec.\ 2) and the artificial
-data sets (ditto, Sec.\ 4) by means of a Bayesian Markov chain Monte Carlo
-(MCMC) method.
+Using Eq.\ (11) in the main text, we estimated parameters of the TAM spectrum for each of the
+empirical data sets (introduced in the main text, Sec.\ 2) and the artificial data sets (ditto,
+Sec.\ 4) by means of a Bayesian Markov chain Monte Carlo (MCMC) method.
 
-Performing MCMC sampling, we used Stan, version 2.18.2, with which we employed
-NUTS algorithm with tuning parameters \lstinline{adapt_delta = .998} and
-\lstinline{max_treedepth = 15}.
-We set the other tuning parameters to their default values. We ran eight
-MCMC chains of $2,000$ steps in which first $1,000$ warm-up steps were dropped
-to compute posterior distributions.
+Performing MCMC sampling, we used Stan, version `r stan_version()`, with which we employed NUTS
+algorithm with tuning parameters
+\lstinline{adapt_delta = `r stan_args[["control"]][["adapt_delta"]]`} and
+\lstinline{max_treedepth = `r stan_args[["control"]][["max_treedepth"]]`}.
+We set the other tuning parameters to their default values.
+We ran `r stan_args[["chains"]] %>% formatC(format = "d", big.mark = ",")` MCMC chains of
+`r stan_args[["iter"]] %>% formatC(format = "d", big.mark = ",")` steps in which first
+`r stan_args[["warmup"]] %>% formatC(format = "d", big.mark = ",")` warm-up steps were dropped to
+compute posterior distributions.
 Listing \ref{lst:stan-code} shows the Stan code used for our estimation.
 In our estimation, we fixed $D$ to the number of all sites or groups in each
-empirical data set. For priors of $\lambda$ and $\theta$, we assumed half-Cauchy
-distributions with scale parameter $5$.
+empirical data set.
+For priors of $\lambda$ and $\theta$, we assumed half-Cauchy distributions with scale parameter 5.
 
 \lstinputlisting[label={lst:stan-code},caption={Stan code.}]{model.stan}
 
 # Results of the empirical data sets
 
-The obtained posterior distributions for the empirical data sets (Tab.\ 1 in
-the main text) were sufficiently fine:
-for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
-indicating that the MCMC chains reached relaxation;
-and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
-cases.
+The obtained posterior distributions for the empirical data sets (Tab.\ 1 in the main text) were
+sufficiently fine:
+for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$, indicating that
+the MCMC chains reached relaxation;
+and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the cases.
 
-\Cref{fig:plot-empirical} shows the posterior predictions of TAM for the
-empirical data sets.
-These predictions were obtained from Eq.\ (7) in the main text scaled by the
-number of cultural traits and the posterior distributions of $\lambda$ and
-$\theta$.
+\Cref{fig:plot-empirical} shows the posterior predictions of TAM for the empirical data sets.
+These predictions were obtained from Eq.\ (7) in the main text scaled by the number of cultural
+traits and the posterior distributions of $\lambda$ and $\theta$.
 
 # Results of the artificial data sets
 
-From each simulation result of the IBM island and lattice models used in Sec.\ 4
-in the main text, we took 10 population snapshots at time steps $191,000, 192,000,
-\cdots, 200,000$ and used the all snapshots to infer the parameters.
+From each simulation result of the IBM island and lattice models used in Sec.\ 4 in the main text,
+we took 10 population snapshots at time steps $191,000, 192,000, \cdots, 200,000$ and used the all
+snapshots to infer the parameters.
 
-The obtained posterior distributions for the artificial data sets (Tab.\ 2 in
-the main text) were sufficiently fine:
-for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$,
-indicating that the MCMC chains reached relaxation;
-and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the
-cases.
+The obtained posterior distributions for the artificial data sets (Tab.\ 2 in the main text) were
+sufficiently fine:
+for all the parameters in all the data sets, $\hat{R}$ was almost equal to $1$, indicating that
+the MCMC chains reached relaxation;
+and the effective sample size, $n_{\rm eff}$, was sufficiently large for all the cases.
 
-\Cref{fig:plot-IBM} shows the posterior predictions of TAM for the artificial
-data sets.
-These predictions were again obtained from Eq.\ (7) in the main text scaled by the
-number of cultural traits (per snapshot in average) and the posterior
-distributions of $\lambda$ and $\theta$.
+\Cref{fig:plot-simulation} shows the posterior predictions of TAM for the artificial data sets.
+These predictions were again obtained from Eq.\ (7) in the main text scaled by the number of
+cultural traits (per snapshot in average) and the posterior distributions of $\lambda$ and
+$\theta$.
 
 ```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
-empirical_df <- data_sets$empirical %>% purrr::map_dfr(function(data_set) {
-  # data_set$table$popularity <- data_set$table$popularity / data_set$D
-  # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
-    data_set$table %>% add_column(label = data_set$label, .before = TRUE)
-})
-empirical_df$label <- factor( empirical_df$label
-                            , levels = data_sets$empirical %>% purrr::map_chr(~ .$label)
-                            )
-theoretical_df <- names(data_sets$empirical) %>% purrr::map_dfr(function(name) {
-    data_set <- data_sets$empirical[[name]]
-    D <- data_set$D
-    ks <- 1:D
-    scale <- sum(data_set$table$frequency)
-    post_pred <- with(rstan::extract(results_empirical[[name]], c("lambda", "theta")), {
-        purrr::map2(lambda, theta, function(lambda_, theta_) {
-            scale * theory(ks, D, lambda_, theta_)
-        }) %>% do.call(rbind, .)
-    })
-    tibble( label = data_sets$empirical[[name]]$label
-          , popularity = ks
-          , freq_mean = apply(post_pred, 2, mean)
-          , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
-          , freq_q975 = apply(post_pred, 2, function(.) quantile(., .975))
-          )
-})
-theoretical_df$label <- factor( theoretical_df$label
-                              , levels = data_sets$empirical %>% purrr::map_chr(~ .$label)
-                              )
+theory <- names(data_sets[["empirical"]]) %>%
+    purrr::map_dfr(function(name) {
+                       data_set <- data_sets[["empirical"]][[name]]
+                       d <- data_set[["d"]]
+                       ks <- seq.int(d)
+                       scale <- sum(data_set[["table"]][["frequency"]])
+                       post_pred <- with(rstan::extract( results_empirical[[name]]
+                                                       , c("lambda", "theta")
+                                                       ), {
+                           purrr::map2(lambda, theta, ~ scale * tam(ks, d, .x, .y)) %>%
+                               do.call(rbind, .)
+                       })
+                       tibble( label = data_sets[["empirical"]][[name]][["label"]]
+                             , popularity = ks
+                             , freq_mean = apply(post_pred, 2, mean)
+                             , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
+                             , freq_q975 = apply(post_pred, 2, function(.) quantile(., .975))
+                             )
+                   }) %>%
+    dplyr::mutate(label = factor( label
+                                , levels = data_sets[["empirical"]] %>% purrr::map_chr(~ .$label)
+                                ))
 
-ggplot(empirical_df, aes(x = popularity)) +
-    facet_wrap(~ label, scales = "free") +
-    geom_point(aes(y = frequency), size = .6) +
-    geom_ribbon( aes(ymin = freq_q025, ymax = freq_q975)
-               , data = theoretical_df
-               , fill = "red"
-               , alpha = .3
-               ) +
-    geom_line( aes(y = freq_mean)
-             , data = theoretical_df
-             , color = "red"
-             , size = .4
-             ) +
-  # scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
-  # scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
-    labs( x = "Popularity"
-        , y = "Frequency"
-        )
+data_sets[["empirical"]] %>%
+    purrr::map_dfr(function(data_set) {
+                       data_set[["table"]] %>%
+                           add_column(label = data_set[["label"]], .before = TRUE)
+                   }) %>%
+    dplyr::mutate(label = factor( label
+                                , levels = data_sets[["empirical"]] %>% purrr::map_chr(~ .$label)
+                                )) %>%
+    {
+        ggplot(., aes(x = popularity)) +
+            facet_wrap(~ label, scales = "free") +
+            geom_point(aes(y = frequency), size = .6) +
+            geom_ribbon( aes(ymin = freq_q025, ymax = freq_q975)
+                       , data = theory
+                       , fill = "red"
+                       , alpha = .3
+                       ) +
+            geom_line( aes(y = freq_mean)
+                     , data = theory
+                     , color = "red"
+                     , size = .4
+                     ) +
+            labs( x = "Popularity"
+                , y = "Frequency"
+                )
+    }
 ```
 
-```{r plot_IBM, fig.height = 2, fig.cap = "\\label{fig:plot-IBM}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
-empirical_df <- data_sets$IBM %>% purrr::map_dfr(function(data_set) {
-  # data_set$table$popularity <- data_set$table$popularity / data_set$D
-  # data_set$table$frequency <- data_set$table$frequency / sum(data_set$table$frequency)
-    data_set$table %>% add_column(label = data_set$label, .before = TRUE)
-})
-empirical_df$label <- factor( empirical_df$label
-                            , levels = data_sets$IBM %>% purrr::map_chr(~ .$label)
-                            )
-theoretical_df <- names(data_sets$IBM) %>% purrr::map_dfr(function(name) {
-    data_set <- data_sets$IBM[[name]]
-    D <- data_set$D
-    ks <- 1:D
-    scale <- sum(data_set$table$frequency) / 10
-    post_pred <- with(rstan::extract(results_IBM[[name]], c("lambda", "theta")), {
-        purrr::map2(lambda, theta, function(lambda_, theta_) {
-            scale * theory(ks, D, lambda_, theta_)
-        }) %>% do.call(rbind, .)
-    })
-    tibble( label = data_sets$IBM[[name]]$label
-          , popularity = ks
-          , freq_mean = apply(post_pred, 2, mean)
-          , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
-          , freq_q975 = apply(post_pred, 2, function(.) quantile(., .975))
-          )
-})
-theoretical_df$label <- factor( theoretical_df$label
-                              , levels = data_sets$IBM %>% purrr::map_chr(~ .$label)
-                              )
+```{r plot_simulation, fig.height = 2, fig.cap = "\\label{fig:plot-simulation}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
+theory <- names(data_sets[["simulation"]]) %>%
+    purrr::map_dfr(function(name) {
+                       data_set <- data_sets[["simulation"]][[name]]
+                       d <- data_set[["d"]]
+                       ks <- seq.int(d)
+                       scale <- sum(data_set[["table"]][["frequency"]]) / 10
+                       post_pred <- with(rstan::extract( results_simulation[[name]]
+                                                       , c("lambda", "theta")
+                                                       ), {
+                           purrr::map2(lambda, theta, ~ scale * tam(ks, d, .x, .y)) %>%
+                               do.call(rbind, .)
+                       })
+                       tibble( label = data_sets[["simulation"]][[name]][["label"]]
+                             , popularity = ks
+                             , freq_mean = apply(post_pred, 2, mean)
+                             , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
+                             , freq_q975 = apply(post_pred, 2, function(.) quantile(., .975))
+                             )
+                   }) %>%
+    dplyr::mutate(label = factor( label
+                                , levels = data_sets[["simulation"]] %>% purrr::map_chr(~ .$label)
+                                ))
 
-ggplot(empirical_df, aes(x = popularity)) +
-    facet_wrap(~ label, scales = "free") +
-    geom_point(aes(y = frequency), size = .6) +
-    geom_ribbon( aes(ymin = freq_q025, ymax = freq_q975)
-               , data = theoretical_df
-               , fill = "red"
-               , alpha = .3
-               ) +
-    geom_line( aes(y = freq_mean)
-             , data = theoretical_df
-             , color = "red"
-             , size = .4
-             ) +
-  # scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
-  # scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
-    labs( x = "Popularity"
-        , y = "Frequency"
-        )
+data_sets[["simulation"]] %>%
+    purrr::map_dfr(function(data_set) {
+                       data_set[["table"]] %>%
+                           add_column(label = data_set[["label"]], .before = TRUE)
+                   }) %>%
+    dplyr::mutate(label = factor( label
+                                , levels = data_sets[["simulation"]] %>% purrr::map_chr(~ .$label)
+                                )) %>%
+    {
+        ggplot(., aes(x = popularity)) +
+            facet_wrap(~ label, scales = "free") +
+            geom_point(aes(y = frequency), size = .6) +
+            geom_ribbon( aes(ymin = freq_q025, ymax = freq_q975)
+                       , data = theory
+                       , fill = "red"
+                       , alpha = .3
+                       ) +
+            geom_line( aes(y = freq_mean)
+                     , data = theory
+                     , color = "red"
+                     , size = .4
+                     ) +
+            labs( x = "Popularity"
+                , y = "Frequency"
+                )
+    }
 ```
 
 \clearpage{\thispagestyle{empty}}
 \renewcommand{\thetable}{\arabic{table}}
 
 ```{r summary_empirical}
-mcmc_stats_desc <- paste( "The estimated posterior mean and standard deviation for each parameter are shown in Mean and SD columns."
-                        , "The columns named 2.5\\%, 25\\%, 50\\%, 75\\%, and 97.5\\% show respective quantiles of the estimated posterior distributions."
-                        , "$n_{\\rm eff}$ is the effective sample size of the autocorrelated MCMC samples, indicating the \\textit{would-be} sample size if they were regarded as independent."
-                        , "$\\hat{R}$ is the potential scale reduction statistic, indicating whether the MCMC chains have reached relaxation or not (they have if $\\hat{R}$ is close to 1)."
-                        )
-
-summary_empirical <- results_empirical %>% purrr::map_dfr(function(fit) {
-    df <- summary(fit)$summary %>% as_tibble %>% round(3)
-    df <- df[1:5, c(1, 3:ncol(df))] %>%
-        add_column( param = c( "$\\lambda$"
-                             , "$\\theta$"
-                             , "$\\beta$"
-                             , "$\\eta^\\prime$"
-                             , "$\\beta + \\eta^\\prime$"
-                             )
-                  , .before = TRUE
-                  )
-    colnames(df) <- c( "Parameter"
-                     , "Mean"
-                     , "SD"
-                     , "2.5\\%"
-                     , "25\\%"
-                     , "50\\%"
-                     , "75\\%"
-                     , "97.5\\%"
-                     , "$n_{\\rm eff}$"
-                     , "$\\hat{R}$"
-                     )
-    df
-})
-write_csv(summary_empirical, file.path("cache", "summary_empirical.csv"))
-knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
+# mcmc_stats_desc <- paste( "The estimated posterior mean and standard deviation for each parameter are shown in Mean and SD columns."
+#                         , "The columns named 2.5\\%, 25\\%, 50\\%, 75\\%, and 97.5\\% show respective quantiles of the estimated posterior distributions."
+#                         , "$n_{\\rm eff}$ is the effective sample size of the autocorrelated MCMC samples, indicating the \\textit{would-be} sample size if they were regarded as independent."
+#                         , "$\\hat{R}$ is the potential scale reduction statistic, indicating whether the MCMC chains have reached relaxation or not (they have if $\\hat{R}$ is close to 1)."
+#                         )
+summary_empirical <- results_empirical %>%
+    purrr::map_dfr(function(fit) {
+                       tbl <- summary(fit)[["summary"]] %>%
+                           as_tibble() %>%
+                           round(3)
+                       tbl <- tbl[1:5, c(1, 3:ncol(tbl))] %>%
+                           add_column( param = c( "$\\lambda$"
+                                                , "$\\theta$"
+                                                , "$\\beta$"
+                                                , "$\\eta^\\prime$"
+                                                , "$\\beta + \\eta^\\prime$"
+                                                )
+                                     , .before = TRUE
+                                     )
+                       colnames(tbl) <- c( "Parameter"
+                                         , "Mean"
+                                         , "SD"
+                                         , "2.5\\%"
+                                         , "25\\%"
+                                         , "50\\%"
+                                         , "75\\%"
+                                         , "97.5\\%"
+                                         , "$n_{\\rm eff}$"
+                                         , "$\\hat{R}$"
+                                         )
+                       tbl
+                   })
+# write_csv(summary_empirical, file.path("cache", "summary_empirical.csv"))
+knitr::kable( summary_empirical
+            , escape = FALSE
+            , booktabs = TRUE
             , label = "summary-empirical"
-            , caption = paste("Posterior distributions of TAM as applied to empirical data.", mcmc_stats_desc)
+            , caption = "Posterior distributions of TAM as applied to empirical data."
             ) %>%
     group_rows("Aurignacian beads", 1, 5) %>%
     group_rows("Neolithic pottery", 6, 10) %>%
@@ -393,38 +393,43 @@ knitr::kable(summary_empirical, escape = FALSE, booktabs = TRUE
 
 \clearpage{\thispagestyle{empty}}
 
-```{r summary_IBM}
-summary_IBM <- results_IBM %>% purrr::map_dfr(function(fit) {
-    df <- summary(fit)$summary %>% as_tibble %>% round(3)
-    df <- df[1:5, c(1, 3:ncol(df))] %>%
-        add_column( param = c( "$\\lambda$"
-                             , "$\\theta$"
-                             , "$\\beta$"
-                             , "$\\eta^\\prime$"
-                             , "$\\beta + \\eta^\\prime$"
-                             )
-                  , .before = TRUE
-                  )
-    colnames(df) <- c( "Parameter"
-                     , "Mean"
-                     , "SD"
-                     , "2.5\\%"
-                     , "25\\%"
-                     , "50\\%"
-                     , "75\\%"
-                     , "97.5\\%"
-                     , "$n_{\\rm eff}$"
-                     , "$\\hat{R}$"
-                     )
-    df
+```{r summary_simulation}
+summary_simulation <- results_simulation %>%
+    purrr::map_dfr(function(fit) {
+                       tbl <- summary(fit)[["summary"]] %>%
+                           as_tibble() %>%
+                           round(3)
+                       tbl <- tbl[1:5, c(1, 3:ncol(tbl))] %>%
+                           add_column( param = c( "$\\lambda$"
+                                                , "$\\theta$"
+                                                , "$\\beta$"
+                                                , "$\\eta^\\prime$"
+                                                , "$\\beta + \\eta^\\prime$"
+                                                )
+                                     , .before = TRUE
+                                     )
+                       colnames(tbl) <- c( "Parameter"
+                                         , "Mean"
+                                         , "SD"
+                                         , "2.5\\%"
+                                         , "25\\%"
+                                         , "50\\%"
+                                         , "75\\%"
+                                         , "97.5\\%"
+                                         , "$n_{\\rm eff}$"
+                                         , "$\\hat{R}$"
+                                         )
+                       tbl
 })
-write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
-knitr::kable(summary_IBM, escape = FALSE, booktabs = TRUE
-            , label = "summary-IBM"
-            , caption = paste("Posterior distributions of TAM as applied to artificial data.", mcmc_stats_desc)
+# write_csv(summary_IBM, file.path("cache", "summary_IBM.csv"))
+knitr::kable( summary_simulation
+            , escape = FALSE
+            , booktabs = TRUE
+            , label = "summary-simulation"
+            , caption = "Posterior distributions of TAM as applied to artificial data."
             ) %>%
     group_rows("IBM island", 1, 5) %>%
     group_rows("IBM lattice", 6, 10)
 ```
 
-<!-- vim: set fdm=syntax: -->
+<!-- vim: set fdm=syntax textwidth=98 nowrap: -->
