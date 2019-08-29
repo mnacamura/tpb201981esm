@@ -75,15 +75,15 @@ ds <- read_csv( file.path("data-raw", "d.csv")
     as.list()
 
 ## Popularity spectra for empirical data sets
-data_sets <- list()
-data_sets[["empirical"]] <- c( "aurignacian_beads"
-                             , "neolithic_pottery"
-                             , "neolithic_ornaments"
-                             , "california_basketry"
-                             , "canoe_stylistic"
-                             , "canoe_functional"
-                             , "wnai_technology"
-                             ) %>%
+datasets <- list()
+datasets[["empirical"]] <- c( "aurignacian_beads"
+                            , "neolithic_pottery"
+                            , "neolithic_ornaments"
+                            , "california_basketry"
+                            , "canoe_stylistic"
+                            , "canoe_functional"
+                            , "wnai_technology"
+                            ) %>%
     purrr::map(function(name) {
                    label <- name %>%
                        gsub("_", " ", .) %>%
@@ -99,7 +99,7 @@ data_sets[["empirical"]] <- c( "aurignacian_beads"
     purrr::flatten()
 
 ## Popularity spectra for simulation data sets at time steps 200000 - 1000 * 0:9
-data_sets[["simulation"]] <- c( paste("simulation_island_t=", 200000 - 1000 * 0:9, sep = "")
+datasets[["simulation"]] <- c( paste("simulation_island_t=", 200000 - 1000 * 0:9, sep = "")
                               , paste("simulation_lattice_t=", 200000 - 1000 * 0:9, sep = "")
                               ) %>%
     purrr::map(function(name) {
@@ -121,20 +121,20 @@ data_sets[["simulation"]] <- c( paste("simulation_island_t=", 200000 - 1000 * 0:
     purrr::flatten()
 
 ## Combine time steps for each simulation data set
-data_sets[["simulation"]][["simulation_island"]] <- list(
+datasets[["simulation"]][["simulation_island"]] <- list(
       label = "IBM island"
     , d = ds[["simulation_island"]]
-    , table = data_sets[["simulation"]][grepl("island", names(data_sets[["simulation"]]))] %>%
+    , table = datasets[["simulation"]][grepl("island", names(datasets[["simulation"]]))] %>%
           purrr::map_dfr(~ .$table)
     )
-data_sets[["simulation"]][grepl("simulation_island_t=", names(data_sets[["simulation"]]))] <- NULL
-data_sets[["simulation"]][["simulation_lattice"]] <- list(
+datasets[["simulation"]][grepl("simulation_island_t=", names(datasets[["simulation"]]))] <- NULL
+datasets[["simulation"]][["simulation_lattice"]] <- list(
       label = "IBM lattice"
     , d = ds[["simulation_lattice"]]
-    , table = data_sets[["simulation"]][grepl("lattice", names(data_sets[["simulation"]]))] %>%
+    , table = datasets[["simulation"]][grepl("lattice", names(datasets[["simulation"]]))] %>%
           purrr::map_dfr(~ .$table)
     )
-data_sets[["simulation"]][grepl("simulation_lattice_t=", names(data_sets[["simulation"]]))] <- NULL
+datasets[["simulation"]][grepl("simulation_lattice_t=", names(datasets[["simulation"]]))] <- NULL
 
 ## TAM spectra function
 tam <- local({
@@ -154,7 +154,7 @@ if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results_empirical <- foreach(data_set = data_sets[["empirical"]]) %dopar% {
+    results_empirical <- foreach(data_set = datasets[["empirical"]]) %dopar% {
         data <- list( l = nrow(data_set[["table"]])
                     , k = data_set[["table"]][["popularity"]]
                     , m = data_set[["table"]][["frequency"]]
@@ -162,7 +162,7 @@ if (file.exists(cache)) {
                     )
         do.call(sampling, c(list(object = model, data = data), stan_args))
     }
-    names(results_empirical) <- names(data_sets[["empirical"]])
+    names(results_empirical) <- names(datasets[["empirical"]])
     save(results_empirical, file = cache)
 }
 
@@ -171,7 +171,7 @@ if (file.exists(cache)) {
     load(cache)
 } else {
     model <- stan_model("model.stan")
-    results_simulation <- foreach(data_set = data_sets[["simulation"]]) %dopar% {
+    results_simulation <- foreach(data_set = datasets[["simulation"]]) %dopar% {
         data <- list( l = nrow(data_set[["table"]])
                     , k = data_set[["table"]][["popularity"]]
                     , m = data_set[["table"]][["frequency"]]
@@ -179,7 +179,7 @@ if (file.exists(cache)) {
                     )
         do.call(sampling, c(list(object = model, data = data), stan_args))
     }
-    names(results_simulation) <- names(data_sets[["simulation"]])
+    names(results_simulation) <- names(datasets[["simulation"]])
     save(results_simulation, file = cache)
 }
 ```
@@ -236,9 +236,9 @@ cultural traits (per snapshot in average) and the posterior distributions of $\l
 $\theta$.
 
 ```{r plot_empirical, fig.cap = "\\label{fig:plot-empirical}Posterior predictions of TAM: empirical data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
-theory <- names(data_sets[["empirical"]]) %>%
+theory <- names(datasets[["empirical"]]) %>%
     purrr::map_dfr(function(name) {
-                       data_set <- data_sets[["empirical"]][[name]]
+                       data_set <- datasets[["empirical"]][[name]]
                        d <- data_set[["d"]]
                        ks <- seq.int(d)
                        scale <- sum(data_set[["table"]][["frequency"]])
@@ -248,7 +248,7 @@ theory <- names(data_sets[["empirical"]]) %>%
                            purrr::map2(lambda, theta, ~ scale * tam(ks, d, .x, .y)) %>%
                                do.call(rbind, .)
                        })
-                       tibble( label = data_sets[["empirical"]][[name]][["label"]]
+                       tibble( label = datasets[["empirical"]][[name]][["label"]]
                              , popularity = ks
                              , freq_mean = apply(post_pred, 2, mean)
                              , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
@@ -256,16 +256,16 @@ theory <- names(data_sets[["empirical"]]) %>%
                              )
                    }) %>%
     dplyr::mutate(label = factor( label
-                                , levels = data_sets[["empirical"]] %>% purrr::map_chr(~ .$label)
+                                , levels = datasets[["empirical"]] %>% purrr::map_chr(~ .$label)
                                 ))
 
-data_sets[["empirical"]] %>%
+datasets[["empirical"]] %>%
     purrr::map_dfr(function(data_set) {
                        data_set[["table"]] %>%
                            add_column(label = data_set[["label"]], .before = TRUE)
                    }) %>%
     dplyr::mutate(label = factor( label
-                                , levels = data_sets[["empirical"]] %>% purrr::map_chr(~ .$label)
+                                , levels = datasets[["empirical"]] %>% purrr::map_chr(~ .$label)
                                 )) %>%
     {
         ggplot(., aes(x = popularity)) +
@@ -288,9 +288,9 @@ data_sets[["empirical"]] %>%
 ```
 
 ```{r plot_simulation, fig.height = 2, fig.cap = "\\label{fig:plot-simulation}Posterior predictions of TAM: artificial data (black points), posterior means (red lines), and 95\\% credible intervals (transparent red ribbons). Note that the 95\\% CIs may be too thin to be seen."}
-theory <- names(data_sets[["simulation"]]) %>%
+theory <- names(datasets[["simulation"]]) %>%
     purrr::map_dfr(function(name) {
-                       data_set <- data_sets[["simulation"]][[name]]
+                       data_set <- datasets[["simulation"]][[name]]
                        d <- data_set[["d"]]
                        ks <- seq.int(d)
                        scale <- sum(data_set[["table"]][["frequency"]]) / 10
@@ -300,7 +300,7 @@ theory <- names(data_sets[["simulation"]]) %>%
                            purrr::map2(lambda, theta, ~ scale * tam(ks, d, .x, .y)) %>%
                                do.call(rbind, .)
                        })
-                       tibble( label = data_sets[["simulation"]][[name]][["label"]]
+                       tibble( label = datasets[["simulation"]][[name]][["label"]]
                              , popularity = ks
                              , freq_mean = apply(post_pred, 2, mean)
                              , freq_q025 = apply(post_pred, 2, function(.) quantile(., .025))
@@ -308,16 +308,16 @@ theory <- names(data_sets[["simulation"]]) %>%
                              )
                    }) %>%
     dplyr::mutate(label = factor( label
-                                , levels = data_sets[["simulation"]] %>% purrr::map_chr(~ .$label)
+                                , levels = datasets[["simulation"]] %>% purrr::map_chr(~ .$label)
                                 ))
 
-data_sets[["simulation"]] %>%
+datasets[["simulation"]] %>%
     purrr::map_dfr(function(data_set) {
                        data_set[["table"]] %>%
                            add_column(label = data_set[["label"]], .before = TRUE)
                    }) %>%
     dplyr::mutate(label = factor( label
-                                , levels = data_sets[["simulation"]] %>% purrr::map_chr(~ .$label)
+                                , levels = datasets[["simulation"]] %>% purrr::map_chr(~ .$label)
                                 )) %>%
     {
         ggplot(., aes(x = popularity)) +
