@@ -24,16 +24,16 @@ instruction](https://nixos.org/nix/manual/#chap-quick-start).
 
 You can install direnv by using Nix:
 
-```
-nix-env -f '<nixpkgs>' -i direnv
+```sh
+> nix-env -f '<nixpkgs>' -i direnv
 ```
 
 After installing direnv, follow
 [the instruction](https://github.com/direnv/direnv#setup).
 Then, just typing
 
-```
-direnv allow<ENTER>
+```sh
+> direnv allow<ENTER>
 ```
 
 in this directory starts installing the dependencies.
@@ -67,13 +67,13 @@ Required R packages:
 
 Use `make`:
 
-```
-make
+```sh
+> make
 ```
 
 Alternatively, you can do it explicitly:
 
-```
-Rscript -e "rmarkdown::render('src.Rmd')"
-cpdf src.pdf -range 1-3 -o appendix_s1.pdf
+```sh
+> Rscript -e "rmarkdown::render('src.Rmd')"
+> cpdf src.pdf -range 1-3 -o appendix_s1.pdf
 ```
