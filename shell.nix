@@ -35,8 +35,9 @@ mkShell {
     pandoc
     pandoc-citeproc
   ]) ++ [
+    gnumake
     ocamlPackages.cpdf
-    xsv
+    # xsv
     (texlive.combine {
       inherit (texlive)
       scheme-basic  # installs collection-{basic,latex}

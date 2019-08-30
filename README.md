@@ -43,8 +43,9 @@ in this directory starts installing the dependencies.
 You need [R](https://www.r-project.org/) (and a number of R packages),
 [pandoc](https://pandoc.org/),
 [pandoc-citeproc](https://github.com/jgm/pandoc-citeproc/),
-[TeX Live](https://www.tug.org/texlive/), and
-[cpdf](https://www.coherentpdf.com/).
+[TeX Live](https://www.tug.org/texlive/),
+[cpdf](https://www.coherentpdf.com/), and
+[GNU Make](https://www.gnu.org/software/make/).
 
 Required R packages:
 
