@@ -1,7 +1,7 @@
-# Source code for Appendix S1 of Nakamura _et al._ "The popularity spectrum applied to cross-cultural question"
+# Source code for Appendix S1 of Nakamura _et al._ "The popularity spectrum applied to a cross-cultural question"
 
 This is the source code of Appendix S1 in the paper titled "The popularity
-spectrum applied to cross-cultural question", co-authored by Mitsuhiro Nakamura,
+spectrum applied to a cross-cultural question", co-authored by Mitsuhiro Nakamura,
 Joe Yuichiro Wakano, Kenichi Aoki, and Yutaka Kobayashi.
 
 The main code is located in [`src.Rmd`](./src.Rmd), an [R
