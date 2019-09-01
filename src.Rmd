@@ -346,12 +346,12 @@ datasets[["simulation"]] %>%
 list( # TAM, IBM, and statistical model
       "$D$" = "Number of groups."
       # TAM and statistical model
-    , "$b$" = "Number of group bifurcations per unit time."
+    , "$b$" = "Number of group bifurcations per group per unit time."
     , "$\\beta$" = "Probability that each trait is transmitted from a parental group to its offspring group in each group bifurcation."
-    , "$h$" = "Number of between-group contacts per unit time."
+    , "$h$" = "Number of between-group contacts per group per unit time."
     , "$\\eta$" = "Probability that each trait is transmitted from one group to another in each between-group contact."
     , "$\\eta^\\prime$ ($= h\\eta/b$)" = "Number of trait transmissions in between-group contacts per group bifurcation (for each trait)."
-    , "$\\mu$" = "Number of trait innovations per unit time."
+    , "$\\mu$" = "Number of trait innovations per group per unit time."
       # IBM
     , "$N$" = "Number of individuals in each group."
     , "$\\tilde{\\beta}$" = "Probability that each trait is transmitted from a parent-group member to an offspring-group member in each group bifurcation."
