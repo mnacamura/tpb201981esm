@@ -378,11 +378,6 @@ list( # TAM, IBM, and statistical model
 \clearpage{\thispagestyle{empty}}
 
 ```{r summary_empirical}
-# mcmc_stats_desc <- paste( "The estimated posterior mean and standard deviation for each parameter are shown in Mean and SD columns."
-#                         , "The columns named 2.5\\%, 25\\%, 50\\%, 75\\%, and 97.5\\% show respective quantiles of the estimated posterior distributions."
-#                         , "$n_{\\rm eff}$ is the effective sample size of the autocorrelated MCMC samples, indicating the \\textit{would-be} sample size if they were regarded as independent."
-#                         , "$\\hat{R}$ is the potential scale reduction statistic, indicating whether the MCMC chains have reached relaxation or not (they have if $\\hat{R}$ is close to 1)."
-#                         )
 summary_empirical <- results_empirical %>%
     purrr::map_dfr(function(fit) {
                        tbl <- summary(fit)[["summary"]] %>%
@@ -423,7 +418,17 @@ knitr::kable( summary_empirical
     group_rows("California basketry", 16, 20) %>%
     group_rows("Canoe stylistic", 21, 25) %>%
     group_rows("Canoe functional", 26, 30) %>%
-    group_rows("WNAI technology", 31, 35)
+    group_rows("WNAI technology", 31, 35) %>%
+    footnote(paste( "The parameters of interest are $\\\\beta$ and $\\\\eta^\\\\prime = h\\\\eta/b$, which are defined in Table 1."
+                  , "Parameters $\\\\lambda$ and $\\\\theta$ are functions of $\\\\beta$ and $\\\\eta^\\\\prime$ (Eqs.~8c and 8d)."
+                  , "The estimated posterior mean and standard deviation for each parameter of each dataset are shown in the Mean and SD columns."
+                  , "The columns labeled 2.5\\\\%, 25\\\\%, etc.~give the respective quantiles of the estimated posterior distribution."
+                  , "Parameter $n_{\\\\rm eff}$ is the effective sample size of the autocorrelated MCMC sample, indicating the would-be sample size assuming independence."
+                  , "Parameter $\\\\hat{R}$ is the potential scale reduction statistic, indicating whether the MCMC chain has reached relaxation (when is close)."
+                  )
+            , escape = FALSE
+            , threeparttable = TRUE
+            )
 ```
 
 \clearpage{\thispagestyle{empty}}
@@ -464,7 +469,8 @@ knitr::kable( summary_simulation
             , caption = "Posterior distributions of TAM as applied to artificial data."
             ) %>%
     group_rows("IBM island", 1, 5) %>%
-    group_rows("IBM lattice", 6, 10)
+    group_rows("IBM lattice", 6, 10) %>%
+    footnote("See the footnote of Table 2 for details.")
 ```
 
 <!-- vim: set fdm=syntax textwidth=98 nowrap: -->
